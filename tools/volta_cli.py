@@ -209,13 +209,17 @@ async def cmd_monitor(args) -> int:
                 slot, temps = decoded
                 stages = "  ".join(f"{p.deci_to_celsius(t):.0f}°" for t in temps)
                 print(f"[{_stamp()}] SIDE   {slot:<2}  {stages}")
+            elif len(raw) == 1 and raw[0] == p.CMD_DEVICE_PARAMETER:
+                # The device echoes the bare command opcode to acknowledge a
+                # DEVICE_PARAMETER frame it accepted.
+                print(f"[{_stamp()}] ACK        DEVICE_PARAMETER accepted")
             else:
                 print(f"[{_stamp()}] 0x{raw[0]:02X} ({raw[0]})  {raw.hex(' ')}")
 
         await client.start_notify(p.CHAR_UUID, on_notify)
         print("Connected. Waiting for telemetry (Ctrl-C to quit).\n")
 
-        if args.echo or args.start or args.stop or args.set_temp:
+        if args.echo or args.start or args.stop or args.set_temp or args.preset is not None:
             try:
                 await asyncio.wait_for(ready.wait(), timeout=20)
             except TimeoutError:
@@ -230,6 +234,8 @@ async def cmd_monitor(args) -> int:
             params = p.params_from_state(t, s)
             if args.set_temp:
                 params = replace(params, top_temp=p.celsius_to_deci(args.set_temp))
+            if args.preset is not None:
+                params = replace(params, preset_choose=args.preset)
             if not args.echo:
                 # --echo leaves the heating state exactly as it is.
                 params = replace(
@@ -268,6 +274,11 @@ def main() -> int:
         "--set-temp",
         type=int,
         help=f"target temperature in °C, {p.TOP_TEMP_MIN}-{p.TOP_TEMP_MAX}",
+    )
+    monitor.add_argument(
+        "--preset",
+        type=int,
+        help=f"select preset slot {0}-{p.HEAT_PRESET_MAX}",
     )
     monitor.add_argument("--start", action="store_true", help="start heating")
     monitor.add_argument("--stop", action="store_true", help="stop heating")

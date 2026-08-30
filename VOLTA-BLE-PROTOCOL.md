@@ -4,11 +4,15 @@ Reconstructed from the frontend bundle of https://www.shishax.app
 (`/assets/index-CBvDkveJ.js`, retrieved 2026-08-29). Every statement below is
 taken from the minified source; the originating function is named each time.
 
-**Verified against real hardware** (a production device, firmware 20260817): presets, names,
-side curves, telemetry and device status all decode plausibly. The evidence that
-measurements are whole degrees: a cooling device reported a top temperature of
-94 °C — read as tenths that would be 9.4 °C, below room temperature and therefore
-impossible. The **write path has not yet been confirmed** against hardware.
+**Verified against real hardware** (a production device, firmware 20260817).
+Presets, names, side curves, telemetry and device status all decode correctly.
+The evidence that measurements are whole degrees: a cooling device reported a top
+temperature of 94 °C — read as tenths that would be 9.4 °C, below room
+temperature and therefore impossible.
+
+The **write path is confirmed** as well: a `DEVICE_PARAMETER` frame changing the
+target temperature from 290 °C to 280 °C was accepted and applied, and telemetry
+reported the new value immediately.
 
 ## Transport
 
@@ -20,8 +24,15 @@ impossible. The **write path has not yet been confirmed** against hardware.
 | Characteristic | `33333333-2222-2222-1111-111100000000` (write + notify) |
 | Additional | `0000180a` Device Information, `00002a28` Software Revision |
 
-A single characteristic carries both directions. The app writes with a fallback
-chain: `writeValue` → `writeValueWithResponse` → `writeValueWithoutResponse`.
+A single characteristic carries both directions. Its properties on a real device
+are `read, indicate, write, notify`.
+
+**Write with response.** The app's fallback chain is `writeValue` →
+`writeValueWithResponse` → `writeValueWithoutResponse`, and the first of those is
+a write *with* response. Sending without response is the last resort, and the
+bundle itself notes it "may be fake-success". That is not a theoretical concern:
+a frame written without response was accepted by the BLE stack with no error and
+then silently dropped by the device. Always write with response.
 
 **There is no local IP interface.** The device can join Wi-Fi, but then it only
 speaks outbound to `wss://api.sxbrowser.com/api/ws` and opens no local port.
@@ -132,6 +143,24 @@ the field names; `holdTime`, `presetChoose`, `boostCount`, `motorLevel` and
 > builds the command from telemetry alone silently sends defaults for those three.
 > On a real device this moved the side temperature from 170 °C to 200 °C. Wait for
 > both packets before sending anything.
+
+### Acknowledgement
+
+After accepting a `DEVICE_PARAMETER` frame the device sends back a **single
+byte, `0xA9`** — the bare command opcode. That is the only positive confirmation
+available; a dropped frame produces no reply at all.
+
+### The device does not echo every field back
+
+Setting `topTemp` manually **deselects the preset**: send `presetChoose=5` along
+with a changed temperature and telemetry afterwards reports `heatPreset=0`. This
+is the device's own behaviour, not a protocol error — a manual temperature
+overrides the preset curve.
+
+The original app knows this. Its post-write verification compares sent against
+received for `lightMode`, `heatControl`, `audioSwitch`, `tempUnit`, `motorLevel`,
+`boostCount` and `pauseState` — and deliberately leaves out `presetChoose` and
+`topTemp`. Do not treat a mismatch on those two as a failure.
 
 ### Starting the heater — two stages
 

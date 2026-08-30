@@ -9,15 +9,12 @@ and verified against a real device. The full protocol reference is in
 [VOLTA-BLE-PROTOCOL.md](VOLTA-BLE-PROTOCOL.md).
 
 > **Project status — please read before installing.**
-> The **receive** path (telemetry, presets, temperatures) is confirmed against
-> real hardware. On the **write** path, a command frame has been transmitted to
-> a real device and accepted: no error, the connection stayed up, and the device
-> state was unchanged — which is what that particular frame asked for, since it
-> mirrored the device's own state. **Changing a value has not been tested yet**,
-> so it is not yet proven that the device parses the frame rather than quietly
-> discarding it. This integration controls an appliance that reaches
-> 320 °C / 608 °F. Do not leave it unattended while you are testing the controls
-> for the first time. See [Safety](#safety).
+> Reading and writing are both confirmed against real hardware: telemetry,
+> presets and temperatures decode correctly, and a command changing the target
+> temperature was accepted and applied by the device. **Starting and stopping the
+> heater has not been exercised on a device yet.** This integration controls an
+> appliance that reaches 320 °C / 608 °F. Do not leave it unattended while you
+> are testing the controls for the first time. See [Safety](#safety).
 
 ---
 
@@ -182,6 +179,16 @@ side temperature from 170 °C to 200 °C.
 The integration therefore refuses to send anything until **both** packets have
 arrived, and rebuilds the full parameter set from both on every update. If you
 are writing your own client, this is the mistake to avoid.
+
+**Commands must be written with response.** A write *without* response is
+accepted by the BLE stack without any error and then silently discarded by the
+device. It looks like success and does nothing.
+
+**Setting a temperature deselects the preset.** After changing the target
+temperature the device reports preset slot 0, whatever slot was active before.
+That is the device's own behaviour — a manual temperature overrides the preset
+curve — and the official app treats it the same way. Expect the `Preset slot`
+sensor to drop to 0 after any temperature change.
 
 ## Safety
 
