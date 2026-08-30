@@ -10,9 +10,10 @@ The evidence that measurements are whole degrees: a cooling device reported a to
 temperature of 94 °C — read as tenths that would be 9.4 °C, below room
 temperature and therefore impossible.
 
-The **write path is confirmed** as well: a `DEVICE_PARAMETER` frame changing the
-target temperature from 290 °C to 280 °C was accepted and applied, and telemetry
-reported the new value immediately.
+The **write path is confirmed** as well. Every command in this document that a
+client needs has been exercised on a device: target temperature, preset
+selection, start, stop, pause, resume, boost, `SKIP_STAGE`, head vibration and
+light mode.
 
 ## Transport
 

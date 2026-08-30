@@ -9,12 +9,12 @@ and verified against a real device. The full protocol reference is in
 [VOLTA-BLE-PROTOCOL.md](VOLTA-BLE-PROTOCOL.md).
 
 > **Project status — please read before installing.**
-> Reading and writing are both confirmed against real hardware: telemetry,
-> presets and temperatures decode correctly, setting a target temperature and
-> selecting a preset both work, and starting the heater works — the device
-> reported `startHeating=1`, its runtime counter began ticking, and the plate
-> went from 29 °C to 279 °C in about a minute. Stopping works too. This
-> integration controls an appliance that reaches 320 °C / 608 °F. Do not leave it
+> Reading and writing are both confirmed against real hardware. Telemetry,
+> presets and temperatures decode correctly, and every control has been
+> exercised on a device: target temperature, preset selection, start, stop,
+> pause, resume, boost, skip stage, head vibration and light mode. This
+> integration controls an appliance that reaches 320 °C / 608 °F — the plate went
+> from 29 °C to 279 °C in about a minute during testing. Do not leave it
 > unattended while you are testing the controls for the first time.
 > See [Safety](#safety).
 
