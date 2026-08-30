@@ -196,6 +196,41 @@ class TestParameterZusammenfuehrung:
         assert f[9] == 0                  # heat_control bleibt aus
 
 
+class TestGoldenFrame:
+    """Kompletter Abgleich gegen ein reales Gerät (Firmware 20260817).
+
+    Die beiden Eingangspakete und der erwartete Frame stammen aus demselben
+    Mitschnitt. Jedes der 18 Bytes wurde einzeln gegen das gehalten, was das
+    Gerät im selben Moment über sich meldete:
+
+        lightMode 2, Soll 290,0 °C, Seite-Soll 170,0 °C, holdTime 30 min,
+        Preset 5, heizt 0, boost 0, motor 5, ton 1, Einheit °C, Anzeige 5,
+        Bildschirmschoner 0, Pause 0
+
+    Damit ist der Encoder statisch vollständig belegt: der Frame ist ein
+    exaktes Abbild des Gerätezustands, ein Echo verstellt nichts.
+    """
+
+    TELEMETRIE = frame("b9 00 14 00 28 0b 54 02 1e 00 00 05 00 00 00 00 05 01 00")
+    STATUS = frame("ba 09 00 27 06 a4 05 00 01")
+    ERWARTET = frame("a9 12 02 0b 54 06 a4 1e 05 00 00 05 01 00 05 00 00 a9")
+
+    def test_frame_stimmt_byte_fuer_byte(self):
+        t = p.decode_telemetry(self.TELEMETRIE)
+        s = p.decode_device_state(self.STATUS)
+        assert p.params_from_state(t, s).encode(supports_f=True) == self.ERWARTET
+
+    def test_dekodierte_werte_entsprechen_der_geraeteanzeige(self):
+        t = p.decode_telemetry(self.TELEMETRIE)
+        s = p.decode_device_state(self.STATUS)
+        assert (t.battery, t.set_temp_c, t.real_side_temp) == (20, 290.0, 40)
+        assert (t.light_mode, t.boost_count, t.motor_level) == (2, 0, 5)
+        assert (t.audio_switch, t.temp_unit, t.set_time) == (1, 0, 30)
+        assert (t.heat_preset, t.start_heating, t.pause_state) == (5, 0, 0)
+        assert (s.real_top_temp, s.custom_side_temp_c) == (39, 170.0)
+        assert (s.preset_show, s.screen_saver, s.wifi_connected) == (5, 0, 1)
+
+
 class TestDeviceParameter:
     def test_frame_ist_genau_18_byte(self):
         # Das Bundle schreibt 18 Byte, nicht 19.

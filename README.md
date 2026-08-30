@@ -10,11 +10,12 @@ and verified against a real device. The full protocol reference is in
 
 > **Project status — please read before installing.**
 > The **receive** path (telemetry, presets, temperatures) is confirmed against
-> real hardware. The **write** path (setting a target temperature, starting and
-> stopping the heater) is implemented and unit-tested, but has **not yet been
-> confirmed against a physical device**. This integration controls an appliance
-> that reaches 320 °C / 608 °F. Do not leave it unattended while you are testing
-> the controls for the first time. See [Safety](#safety).
+> real hardware. For the **write** path, every one of the 18 bytes of a command
+> frame has been checked against what the device reported about itself at that
+> moment, and the encoder reproduces that frame exactly — but **no frame has
+> actually been transmitted to a device yet**. This integration controls an
+> appliance that reaches 320 °C / 608 °F. Do not leave it unattended while you
+> are testing the controls for the first time. See [Safety](#safety).
 
 ---
 
