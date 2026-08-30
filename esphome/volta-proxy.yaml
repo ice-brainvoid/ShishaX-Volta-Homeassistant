@@ -1,13 +1,13 @@
-# Bluetooth-Proxy für den VOLTA.
+# Bluetooth proxy for the VOLTA.
 #
-# Home Assistant läuft bei dir in einer VirtualBox-VM ohne Bluetooth-Adapter.
-# Dieser ESP32 stellt die BLE-Verbindung her und reicht sie an HA durch.
-# In Shisha-Nähe platzieren - der VOLTA liegt am Mac bei -50 dBm, ein Proxy
-# im selben Raum hat also reichlich Reserve.
+# Use this when Home Assistant has no Bluetooth adapter of its own, or is too
+# far from the device - for example when it runs in a VM or container. This
+# ESP32 establishes the BLE connection and forwards it to Home Assistant.
+# Place it in the same room as the hookah.
 #
-# Wichtig: bluetooth_proxy braucht "active: true". Nur damit sind echte
-# GATT-Verbindungen möglich; ohne das werden lediglich Advertisements
-# weitergereicht, und die Integration kann nichts schreiben.
+# Important: bluetooth_proxy needs "active: true". Only then are real GATT
+# connections possible; without it only advertisements are forwarded and the
+# integration cannot write anything.
 
 esphome:
   name: volta-proxy
@@ -16,7 +16,7 @@ esphome:
 esp32:
   board: esp32dev
   framework:
-    # ESP-IDF statt Arduino: deutlich stabiler bei vielen BLE-Verbindungen.
+    # ESP-IDF rather than Arduino: noticeably more stable with many BLE connections.
     type: esp-idf
 
 logger:
@@ -32,7 +32,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  # Fällt das WLAN aus, spannt der Proxy einen eigenen Accesspoint auf.
+  # If Wi-Fi drops, the proxy opens its own access point.
   ap:
     ssid: "VOLTA Proxy Fallback"
     password: !secret fallback_password

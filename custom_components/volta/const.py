@@ -1,4 +1,4 @@
-"""Konstanten der VOLTA-Integration."""
+"""Constants for the VOLTA integration."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ DOMAIN: Final = "volta"
 
 CONF_ADDRESS: Final = "address"
 
-# Das Gerät pusht Telemetrie von selbst. Der Timeout greift nur, wenn der
-# Stream abreisst, ohne dass die BLE-Verbindung fällt.
+# The device pushes telemetry on its own. This timeout only matters when the
+# stream stops without the BLE connection dropping.
 STALE_AFTER: Final = 120
 
 CONNECT_TIMEOUT: Final = 20

@@ -1,4 +1,4 @@
-"""ShishaX VOLTA - lokale Steuerung über BLE."""
+"""ShishaX VOLTA - local control over BLE."""
 
 from __future__ import annotations
 
@@ -22,13 +22,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     address: str = entry.data[CONF_ADDRESS]
     ble_device = bluetooth.async_ble_device_from_address(hass, address.upper(), connectable=True)
     if ble_device is None:
-        raise ConfigEntryNotReady(f"VOLTA {address} nicht in Reichweite")
+        raise ConfigEntryNotReady(f"VOLTA {address} not in range")
 
     coordinator = VoltaCoordinator(hass, address, entry.title)
     try:
         await coordinator.async_connect(ble_device)
-    except Exception as err:  # bleak wirft je nach Backend sehr unterschiedlich
-        raise ConfigEntryNotReady(f"Verbindung zu {address} fehlgeschlagen: {err}") from err
+    except Exception as err:  # bleak raises very differently depending on the backend
+        raise ConfigEntryNotReady(f"Connection to {address} failed: {err}") from err
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -45,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _make_reconnect_callback(coordinator: VoltaCoordinator):
-    """Nach einem Verbindungsabbruch neu verbinden, sobald das Gerät wieder funkt."""
+    """Reconnect after a dropped connection as soon as the device advertises again."""
 
     async def _reconnect(service_info, change) -> None:
         if coordinator.available:
@@ -53,7 +53,7 @@ def _make_reconnect_callback(coordinator: VoltaCoordinator):
         try:
             await coordinator.async_connect(service_info.device)
         except Exception as err:
-            _LOGGER.debug("Reconnect fehlgeschlagen: %s", err)
+            _LOGGER.debug("Reconnect failed: %s", err)
 
     def _callback(service_info, change) -> None:
         coordinator.hass.async_create_task(_reconnect(service_info, change))

@@ -1,4 +1,4 @@
-"""Binäre Zustände: Zieltemperatur erreicht, Pause, WLAN."""
+"""Binary states: target temperature reached, paused, Wi-Fi."""
 
 from __future__ import annotations
 

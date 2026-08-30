@@ -1,16 +1,17 @@
-"""Frame-Codec für das VOLTA-BLE-Protokoll.
+"""Frame codec for the VOLTA BLE protocol.
 
-Reines Python ohne Home-Assistant-Abhängigkeiten, damit es isoliert testbar ist.
-Siehe VOLTA-BLE-PROTOCOL.md für die Herleitung aus dem Frontend-Bundle.
+Plain Python with no Home Assistant dependency so it can be tested in isolation.
+See VOLTA-BLE-PROTOCOL.md for how this was derived from the frontend bundle.
 
-Einheiten - die häufigste Fehlerquelle:
+Units — the most common source of mistakes:
 
-* **Sollwerte** (Zieltemperatur, Seitentemperatur der Presets) laufen intern in
-  **Zehntelgrad**. 290 °C sind 2900. Das Bundle nennt das selbst "deci".
-* **Messwerte** (``real_top_temp``, ``real_side_temp``) kommen in **Ganzgrad**
-  und werden nicht skaliert.
-* Ob Zehntelgrad auch auf dem Draht stehen, hängt an der Firmware: ``supports_f``
-  ist wahr ab Software-Revision 20260626. Ältere Geräte übertragen Ganzgrad.
+* **Setpoints** (target temperature, preset side curves) are held internally in
+  **tenths of a degree**. 290 °C is 2900. The bundle calls this "deci" itself.
+* **Measurements** (``real_top_temp``, ``real_side_temp``) arrive in **whole
+  degrees** and are not scaled.
+* Whether tenths also travel on the wire depends on the firmware: ``supports_f``
+  is true from software revision 20260626 onwards. Older devices send whole
+  degrees.
 """
 
 from __future__ import annotations
@@ -24,11 +25,11 @@ DEVICE_INFO_SERVICE: Final = "0000180a-0000-1000-8000-00805f9b34fb"
 SOFTWARE_REV_CHAR: Final = "00002a28-0000-1000-8000-00805f9b34fb"
 NAME_PREFIXES: Final = ("VOLTA_", "ESP32_")
 
-# Ab dieser Software-Revision überträgt das Gerät Zehntelgrad statt Ganzgrad.
+# From this software revision the device transmits tenths instead of whole degrees.
 SUPPORTS_F_FROM: Final = 20260626
 LONG_PASSWORD_FROM: Final = "20260826"
 
-# Ausgehend (Host -> Gerät)
+# Outgoing (host -> device)
 CMD_USER_TEMP_TIME: Final = 161
 CMD_DELETE_PRESET: Final = 162
 CMD_WIFI_SSID_1: Final = 163
@@ -45,7 +46,7 @@ CMD_SIDE_TEMP_WRITE: Final = 193
 CMD_SKIP_STAGE: Final = 242
 CMD_FACTORY_RESET: Final = 246
 
-# Eingehend (Gerät -> Host)
+# Incoming (device -> host)
 RSP_PRESET_READ: Final = 177
 RSP_OPTION_NAME_1: Final = 179
 RSP_OPTION_NAME_2: Final = 180
@@ -55,7 +56,7 @@ RSP_WIFI_STATUS: Final = 184
 RSP_TELEMETRY: Final = 185
 RSP_DEVICE_STATE: Final = 186
 
-# Grenzwerte in Grad Celsius, wie sie das Gerät selbst prüft.
+# Limits in degrees Celsius, as the device validates them itself.
 TOP_TEMP_MIN: Final = 200
 TOP_TEMP_MAX: Final = 320
 SIDE_TEMP_MIN: Final = 100
@@ -69,13 +70,13 @@ HEAT_PRESET_MAX: Final = 14
 PRESET_SHOW_MIN: Final = 1
 PRESET_SHOW_MAX: Final = 15
 
-# Verzögerung zwischen Preset-Auswahl und Heizstart. Das Gerät verwirft den
-# zweiten Frame, wenn er zu früh kommt.
+# Delay between selecting a preset and starting the heater. The device discards
+# the second frame if it arrives too early.
 START_SEQUENCE_DELAY: Final = 0.2
 
 
 def parse_software_revision(revision: str | None) -> int | None:
-    """Achtstelliges Datum aus dem Software-Revision-String ziehen."""
+    """Extract the eight-digit date from the software revision string."""
     if not revision:
         return None
     digits = ""
@@ -90,7 +91,7 @@ def parse_software_revision(revision: str | None) -> int | None:
 
 
 def supports_deci(revision: str | None) -> bool:
-    """``supportsF`` im Bundle: neuere Firmware überträgt Zehntelgrad."""
+    """``supportsF`` in the bundle: newer firmware transmits tenths of a degree."""
     parsed = parse_software_revision(revision)
     return parsed is not None and parsed >= SUPPORTS_F_FROM
 
@@ -104,12 +105,12 @@ def deci_to_celsius(deci: int) -> float:
 
 
 def encode_wire_temp(deci: int, supports_f: bool) -> int:
-    """Zehntelgrad -> Drahtwert (``Fn`` im Bundle)."""
+    """Tenths of a degree -> wire value (``Fn`` in the bundle)."""
     return deci if supports_f else (deci + 5) // 10
 
 
 def decode_wire_temp(wire: int, supports_f: bool) -> int:
-    """Drahtwert -> Zehntelgrad (``ur`` im Bundle). Invers zu :func:`encode_wire_temp`."""
+    """Wire value -> tenths of a degree (``ur``). Inverse of :func:`encode_wire_temp`."""
     return wire if supports_f else wire * 10
 
 
@@ -119,14 +120,14 @@ def _be16(value: int) -> tuple[int, int]:
 
 def _check(name: str, value: int, low: int, high: int) -> None:
     if not low <= value <= high:
-        raise ValueError(f"{name}={value} außerhalb {low}-{high}")
+        raise ValueError(f"{name}={value} outside {low}-{high}")
 
 
 @dataclass(slots=True)
 class DeviceParameter:
-    """Der zentrale Steuerbefehl. Setzt Sollwerte und startet/stoppt das Heizen.
+    """The central control command. Sets setpoints and starts or stops heating.
 
-    ``top_temp`` und ``side_temp`` sind Zehntelgrad, genau wie im Original.
+    ``top_temp`` and ``side_temp`` are tenths of a degree, as in the original.
     """
 
     top_temp: int = 2800
@@ -155,7 +156,7 @@ class DeviceParameter:
         for name in ("heat_control", "audio_switch", "temp_unit", "screen_saver", "pause_state"):
             value = getattr(self, name)
             if value not in (0, 1):
-                raise ValueError(f"{name}={value} muss 0 oder 1 sein")
+                raise ValueError(f"{name}={value} must be 0 or 1")
 
         top_hi, top_lo = _be16(encode_wire_temp(self.top_temp, supports_f))
         side_hi, side_lo = _be16(encode_wire_temp(self.side_temp, supports_f))
@@ -185,19 +186,19 @@ class DeviceParameter:
 
 @dataclass(slots=True)
 class Telemetry:
-    """Dekodiertes ``TELEMETRY``-Paket (Opcode 185)."""
+    """Decoded ``TELEMETRY`` packet (opcode 185)."""
 
     battery: int
-    set_temp: int          # Zehntelgrad
+    set_temp: int          # tenths of a degree
     light_mode: int
-    set_time: int          # Minuten
-    elapsed: int           # Sekunden
+    set_time: int          # minutes
+    elapsed: int           # seconds
     heat_preset: int
     boost_count: int
     start_heating: int
     pause_state: int
     temp_ready: int
-    real_side_temp: int | None = None  # Ganzgrad
+    real_side_temp: int | None = None  # whole degrees
     motor_level: int | None = None
     audio_switch: int | None = None
     temp_unit: int | None = None
@@ -208,7 +209,7 @@ class Telemetry:
 
 
 def decode_telemetry(data: bytes, supports_f: bool = True) -> Telemetry | None:
-    """``gD()`` im Bundle. Gibt ``None`` zurück, wenn das Paket nicht passt."""
+    """``gD()`` in the bundle. Returns ``None`` when the packet does not match."""
     if len(data) < 16 or data[0] != RSP_TELEMETRY:
         return None
 
@@ -224,7 +225,7 @@ def decode_telemetry(data: bytes, supports_f: bool = True) -> Telemetry | None:
         start_heating=data[13] & 1,
         pause_state=data[14] & 1,
         temp_ready=data[15] & 1,
-        # Messwert in Ganzgrad; ausserhalb 0-250 meldet das Gerät nichts Gültiges.
+        # Measurement in whole degrees; outside 0-250 the device reports nothing valid.
         real_side_temp=side if 0 <= side <= 250 else None,
     )
     if len(data) >= 19:
@@ -236,10 +237,10 @@ def decode_telemetry(data: bytes, supports_f: bool = True) -> Telemetry | None:
 
 @dataclass(slots=True)
 class DeviceState:
-    """Dekodiertes ``DEVICE_STATE``-Paket (Opcode 186)."""
+    """Decoded ``DEVICE_STATE`` packet (opcode 186)."""
 
-    real_top_temp: int       # Ganzgrad
-    custom_side_temp: int    # Zehntelgrad
+    real_top_temp: int       # whole degrees
+    custom_side_temp: int    # tenths of a degree
     preset_show: int
     screen_saver: int
     wifi_connected: int
@@ -250,11 +251,11 @@ class DeviceState:
 
 
 def decode_device_state(data: bytes, supports_f: bool = True) -> DeviceState | None:
-    """``uk()`` im Bundle."""
+    """``uk()`` in the bundle."""
     if len(data) < 9 or data[0] != RSP_DEVICE_STATE:
         return None
     return DeviceState(
-        # Messwert, im Original bewusst nicht skaliert.
+        # Measurement, deliberately unscaled in the original.
         real_top_temp=data[2] << 8 | data[3],
         custom_side_temp=decode_wire_temp(data[4] << 8 | data[5], supports_f),
         preset_show=data[6],
@@ -264,13 +265,13 @@ def decode_device_state(data: bytes, supports_f: bool = True) -> DeviceState | N
 
 
 def params_from_state(telemetry: Telemetry, device_state: DeviceState) -> DeviceParameter:
-    """Vollständigen Parametersatz aus beiden Statuspaketen bauen.
+    """Build the complete parameter set from both status packets.
 
-    ``DEVICE_PARAMETER`` überschreibt alle Felder gleichzeitig, aber die Felder
-    verteilen sich auf zwei Pakete: ``side_temp``, ``preset_show`` und
-    ``screen_saver`` stehen **nur** im ``DEVICE_STATE``. Wer den Satz allein aus
-    der Telemetrie baut, sendet dort stillschweigend Defaults und verstellt das
-    Gerät. Beide Pakete sind deshalb Pflichtargumente.
+    ``DEVICE_PARAMETER`` overwrites every field at once, but those fields are
+    split across two packets: ``side_temp``, ``preset_show`` and ``screen_saver``
+    exist **only** in ``DEVICE_STATE``. Building the set from telemetry alone
+    silently sends defaults for those and reconfigures the device. Both packets
+    are therefore required arguments.
     """
     return DeviceParameter(
         top_temp=telemetry.set_temp,
@@ -292,7 +293,7 @@ def params_from_state(telemetry: Telemetry, device_state: DeviceState) -> Device
 def decode_preset(
     data: bytes, supports_f: bool = True
 ) -> tuple[int, list[int], list[int]] | None:
-    """``vD()`` im Bundle -> (slot, 5 Temperaturen in Zehntelgrad, 5 Dauern in Minuten)."""
+    """``vD()`` in the bundle -> (slot, 5 temperatures in tenths, 5 durations in minutes)."""
     if len(data) < 19 or data[0] != RSP_PRESET_READ:
         return None
     temps = [
@@ -302,7 +303,7 @@ def decode_preset(
 
 
 def decode_side_curve(data: bytes) -> tuple[int, list[int]] | None:
-    """``bD()`` im Bundle. Kennt ein langes und ein kurzes Format."""
+    """``bD()`` in the bundle. Knows a long and a short format."""
     if len(data) < 8 or data[0] != RSP_SIDE_CURVE:
         return None
     if (data[1] >= 14 or len(data) >= 14) and len(data) >= 13:
@@ -315,7 +316,7 @@ def decode_side_curve(data: bytes) -> tuple[int, list[int]] | None:
 
 
 def decode_option_name(data: bytes) -> tuple[int, int, str] | None:
-    """Namensfragment -> (slot, teil, text). Teil 0 sind die Bytes 0-15, Teil 1 die Bytes 16-31."""
+    """Name fragment -> (slot, part, text). Part 0 is bytes 0-15, part 1 bytes 16-31."""
     if len(data) < 20 or data[0] not in (RSP_OPTION_NAME_1, RSP_OPTION_NAME_2):
         return None
     part = 0 if data[0] == RSP_OPTION_NAME_1 else 1
@@ -326,10 +327,10 @@ def decode_option_name(data: bytes) -> tuple[int, int, str] | None:
 def encode_preset(
     slot: int, temps: list[int], times: list[int], supports_f: bool = True
 ) -> bytes:
-    """``USER_TEMP_TIME`` (161). ``temps`` in Zehntelgrad, ``times`` in Minuten."""
+    """``USER_TEMP_TIME`` (161). ``temps`` in tenths of a degree, ``times`` in minutes."""
     _check("slot", slot, 0, HEAT_PRESET_MAX)
     if len(temps) != 5 or len(times) != 5:
-        raise ValueError("temps und times brauchen je 5 Einträge")
+        raise ValueError("temps and times each need 5 entries")
     for temp in temps:
         _check("temp", temp, TOP_TEMP_MIN * 10, TOP_TEMP_MAX * 10)
     for minutes in times:
@@ -354,7 +355,7 @@ def encode_delete_preset(slot: int) -> bytes:
 
 
 def encode_option_name(slot: int, name: str) -> tuple[bytes, bytes]:
-    """``OPTION_NAME`` (167/168) - Name auf zwei Frames zu je 16 Byte."""
+    """``OPTION_NAME`` (167/168) - name split across two frames of 16 bytes."""
     _check("slot", slot, 0, HEAT_PRESET_MAX)
     raw = name.encode("utf-8")[:32]
 
@@ -372,5 +373,5 @@ def encode_option_name(slot: int, name: str) -> tuple[bytes, bytes]:
 
 
 def encode_skip_stage() -> bytes:
-    """``SKIP_STAGE`` (242) - eine Heizstufe überspringen."""
+    """``SKIP_STAGE`` (242) - skip one heating stage."""
     return bytes((CMD_SKIP_STAGE, 4, 1, CMD_SKIP_STAGE))

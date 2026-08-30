@@ -1,4 +1,4 @@
-"""Gemeinsame Basis für alle VOLTA-Entities."""
+"""Shared base class for all VOLTA entities."""
 
 from __future__ import annotations
 

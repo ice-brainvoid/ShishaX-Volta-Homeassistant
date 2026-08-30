@@ -1,4 +1,4 @@
-"""BLE-Verbindung und Zustandsführung für den VOLTA."""
+"""BLE connection and state handling for the VOLTA."""
 
 from __future__ import annotations
 
@@ -20,15 +20,15 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class VoltaCoordinator:
-    """Hält die BLE-Verbindung und den zusammengeführten Gerätezustand.
+    """Holds the BLE connection and the merged device state.
 
-    ``DEVICE_PARAMETER`` überschreibt immer alle Felder auf einmal. Deshalb wird
-    hier aus Telemetrie und Gerätestatus ein vollständiger Parametersatz gepflegt,
-    in den einzelne Änderungen hineingemischt werden - genauso wie es die
-    Original-App macht.
+    ``DEVICE_PARAMETER`` always overwrites every field at once. This class
+    therefore maintains a complete parameter set built from telemetry and device
+    status, into which individual changes are merged - exactly what the original
+    app does.
 
-    Temperaturen laufen intern durchgehend in Zehntelgrad; nur die Properties
-    am Ende geben Grad Celsius nach aussen.
+    Temperatures are handled in tenths of a degree throughout; only the
+    properties at the bottom expose degrees Celsius.
     """
 
     def __init__(self, hass: HomeAssistant, address: str, name: str) -> None:
@@ -46,13 +46,13 @@ class VoltaCoordinator:
         self._params: p.DeviceParameter | None = None
         self._listeners: list[Callable[[], None]] = []
         self._lock = asyncio.Lock()
-        # Ein Kommando überschreibt alle Felder, und die verteilen sich auf beide
-        # Pakete. Vor dem ersten Senden müssen deshalb beide eingetroffen sein.
+        # One command overwrites every field, and those fields are split across
+        # both packets. Both must have arrived before anything may be sent.
         self._state_complete = asyncio.Event()
 
     @callback
     def async_add_listener(self, update_callback: Callable[[], None]) -> Callable[[], None]:
-        """Entity für Zustandsänderungen registrieren."""
+        """Register an entity for state changes."""
         self._listeners.append(update_callback)
 
         def remove() -> None:
@@ -66,7 +66,7 @@ class VoltaCoordinator:
             update_callback()
 
     async def async_connect(self, ble_device: BLEDevice) -> None:
-        """Verbinden, Firmware-Stand lesen und Notifications abonnieren."""
+        """Connect, read the firmware revision and subscribe to notifications."""
         async with self._lock:
             if self._client is not None and self._client.is_connected:
                 return
@@ -81,36 +81,36 @@ class VoltaCoordinator:
             await self._read_software_revision()
             await self._client.start_notify(p.CHAR_UUID, self._on_notify)
             self.available = True
-            _LOGGER.debug("%s: verbunden, Notifications aktiv", self.name)
+            _LOGGER.debug("%s: connected, notifications active", self.name)
 
-        # Das Gerät pusht Telemetrie und Status von selbst; ohne beide kennen wir
-        # den Parametersatz nicht und dürfen nichts senden.
+        # The device pushes telemetry and status on its own; without both we do
+        # not know the parameter set and must not send anything.
         try:
             await asyncio.wait_for(self._state_complete.wait(), timeout=15)
         except TimeoutError:
             _LOGGER.warning(
-                "%s: unvollständiger Zustand nach dem Verbinden "
-                "(Telemetrie=%s, Status=%s) - Steuerung bleibt gesperrt",
+                "%s: incomplete state after connecting (telemetry=%s, status=%s) - "
+                "control stays locked",
                 self.name,
                 self.telemetry is not None,
                 self.device_state is not None,
             )
 
     async def _read_software_revision(self) -> None:
-        """Firmware-Stand bestimmt, ob Temperaturen in Zehntelgrad übertragen werden."""
+        """The firmware revision decides whether temperatures travel as tenths."""
         try:
             raw = await self._client.read_gatt_char(p.SOFTWARE_REV_CHAR)
             self.software_revision = raw.decode("utf-8", errors="replace").strip()
         except Exception as err:
-            # Das Original nimmt in diesem Fall die alte Ganzgrad-Variante an.
-            _LOGGER.debug("%s: Software-Revision nicht lesbar (%s)", self.name, err)
+            # The original assumes the older whole-degree variant in this case.
+            _LOGGER.debug("%s: software revision unreadable (%s)", self.name, err)
             self.software_revision = None
 
         self._supports_f = p.supports_deci(self.software_revision)
         _LOGGER.debug(
-            "%s: Firmware %s -> Zehntelgrad=%s",
+            "%s: firmware %s -> tenths of a degree=%s",
             self.name,
-            self.software_revision or "(unbekannt)",
+            self.software_revision or "(unknown)",
             self._supports_f,
         )
 
@@ -123,17 +123,17 @@ class VoltaCoordinator:
 
     @callback
     def _on_disconnect(self, _client: BleakClient) -> None:
-        _LOGGER.debug("%s: Verbindung getrennt", self.name)
+        _LOGGER.debug("%s: disconnected", self.name)
         self.available = False
         self._client = None
-        # Nach dem Reconnect erst wieder senden, wenn beide Pakete neu da sind.
+        # After a reconnect, only send again once both packets have arrived anew.
         self._state_complete.clear()
         self._params = None
         self._notify_listeners()
 
     @callback
     def _on_notify(self, _sender, data: bytearray) -> None:
-        """Eingehendes Paket verarbeiten und in den Parametersatz spiegeln."""
+        """Handle an incoming packet and mirror it into the parameter set."""
         raw = bytes(data)
         if not raw:
             return
@@ -151,7 +151,7 @@ class VoltaCoordinator:
             self.device_state = state
 
         else:
-            # Preset-, Namens- und WLAN-Pakete interessieren die Entities nicht.
+            # Preset, name and Wi-Fi packets are of no interest to the entities.
             return
 
         if self.telemetry is not None and self.device_state is not None:
@@ -163,18 +163,16 @@ class VoltaCoordinator:
 
     async def _write(self, frame: bytes) -> None:
         if self._client is None or not self._client.is_connected:
-            raise RuntimeError("nicht verbunden")
+            raise RuntimeError("not connected")
         await self._client.write_gatt_char(p.CHAR_UUID, frame, response=False)
 
     async def async_send_params(self, **changes) -> None:
-        """Parametersatz mit Änderungen überschreiben und senden.
+        """Overwrite the parameter set with changes and send it.
 
-        Temperaturen in ``changes`` sind Zehntelgrad.
+        Temperatures in ``changes`` are tenths of a degree.
         """
         if self._params is None:
-            raise RuntimeError(
-                "Parametersatz unvollständig - Telemetrie und Gerätestatus fehlen noch"
-            )
+            raise RuntimeError("parameter set incomplete - telemetry and device status missing")
 
         async with self._lock:
             params = replace(self._params, **changes)
@@ -185,18 +183,16 @@ class VoltaCoordinator:
         await self.async_send_params(top_temp=p.celsius_to_deci(celsius))
 
     async def async_start_heating(self, **changes) -> None:
-        """Heizen starten.
+        """Start heating.
 
-        Bei einem Presetwechsel verlangt das Gerät zwei Frames: erst die Auswahl
-        mit ``heat_control=0``, dann nach kurzer Pause der eigentliche Start.
-        Ein einzelner Frame wird verworfen.
+        On a preset change the device requires two frames: first the selection
+        with ``heat_control=0``, then after a short pause the actual start. A
+        single frame is discarded.
         """
         if self._params is None:
-            raise RuntimeError(
-                "Parametersatz unvollständig - Telemetrie und Gerätestatus fehlen noch"
-            )
+            raise RuntimeError("parameter set incomplete - telemetry and device status missing")
 
-        # heat_control und pause_state bestimmt diese Methode selbst.
+        # heat_control and pause_state are decided by this method itself.
         changes.pop("heat_control", None)
         changes.pop("pause_state", None)
         preset_changed = changes.get("preset_choose", self._params.preset_choose) != (
@@ -218,9 +214,9 @@ class VoltaCoordinator:
 
     @property
     def current_temperature(self) -> float | None:
-        """Ist-Temperatur in °C. Messwerte kommen in Ganzgrad.
+        """Measured temperature in °C. Measurements arrive in whole degrees.
 
-        Bevorzugt die Temperatur oben; fällt sonst auf die Seitentemperatur zurück.
+        Prefers the top temperature and falls back to the side temperature.
         """
         if self.device_state is not None and self.device_state.real_top_temp:
             return float(self.device_state.real_top_temp)
@@ -230,7 +226,7 @@ class VoltaCoordinator:
 
     @property
     def target_temperature(self) -> float | None:
-        """Zieltemperatur in °C."""
+        """Target temperature in °C."""
         return self.telemetry.set_temp_c if self.telemetry else None
 
     @property

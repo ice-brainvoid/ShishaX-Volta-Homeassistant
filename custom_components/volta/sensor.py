@@ -1,4 +1,4 @@
-"""Sensoren für Akku, Temperaturen und Sitzungsdauer."""
+"""Sensors for battery, temperatures and session runtime."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        # 255 meldet das Gerät, wenn kein Messwert vorliegt.
+        # The device reports 255 when no reading is available.
         value=lambda c: (
             c.telemetry.battery
             if c.telemetry and c.telemetry.battery != 255
@@ -59,7 +59,7 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
     VoltaSensorDescription(
         key="elapsed",
         translation_key="elapsed",
-        # Sekunden, nicht Minuten - im Mitschnitt zählt der Wert im Sekundentakt hoch.
+        # Seconds, not minutes - in a capture the value ticks up once per second.
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.SECONDS,
         state_class=SensorStateClass.MEASUREMENT,

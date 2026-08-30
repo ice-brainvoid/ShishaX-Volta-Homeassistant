@@ -1,4 +1,4 @@
-"""Config-Flow: Gerät per Bluetooth finden und übernehmen."""
+"""Config flow: discover the device over Bluetooth and adopt it."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ class VoltaConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> ConfigFlowResult:
-        """Automatische Erkennung durch den Bluetooth-Stack."""
+        """Automatic discovery by the Bluetooth stack."""
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
@@ -62,7 +62,7 @@ class VoltaConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manuelle Auswahl aus den sichtbaren Geräten."""
+        """Manual selection from the visible devices."""
         if user_input is not None:
             address = user_input[CONF_ADDRESS]
             await self.async_set_unique_id(address, raise_on_progress=False)

@@ -1,4 +1,4 @@
-"""Climate-Entity für den VOLTA-Heizkopf."""
+"""Climate entity for the VOLTA heater."""
 
 from __future__ import annotations
 
@@ -39,8 +39,8 @@ class VoltaClimate(VoltaEntity, ClimateEntity):
     )
     _attr_min_temp = p.TOP_TEMP_MIN
     _attr_max_temp = p.TOP_TEMP_MAX
-    # Sollwerte laufen in Zehntelgrad, ein Grad Schrittweite ist also problemlos
-    # darstellbar - auch auf alter Firmware, die Ganzgrad überträgt.
+    # Setpoints travel in tenths of a degree, so a one-degree step is easily
+    # representable - even on older firmware that transmits whole degrees.
     _attr_target_temperature_step = 1
 
     def __init__(self, coordinator: VoltaCoordinator) -> None:
@@ -66,7 +66,7 @@ class VoltaClimate(VoltaEntity, ClimateEntity):
             return HVACAction.OFF
         if telemetry.pause_state:
             return HVACAction.IDLE
-        # tempReady heisst: Zieltemperatur erreicht, das Gerät hält nur noch.
+        # tempReady means the target was reached and the device is only holding.
         return HVACAction.IDLE if telemetry.temp_ready else HVACAction.HEATING
 
     @property
