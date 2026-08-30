@@ -1,0 +1,20 @@
+{
+  "domain": "volta",
+  "name": "ShishaX VOLTA",
+  "bluetooth": [
+    {
+      "local_name": "VOLTA_*"
+    },
+    {
+      "service_uuid": "59462f12-9543-9999-12c8-58b459a2712d"
+    }
+  ],
+  "codeowners": ["@ice-brainvoid"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/ice-brainvoid/ShishaX-Volta-Homeassistant",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/ice-brainvoid/ShishaX-Volta-Homeassistant/issues",
+  "requirements": ["bleak-retry-connector>=3.5.0"],
+  "version": "0.1.0"
+}

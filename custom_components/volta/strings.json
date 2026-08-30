@@ -1,0 +1,36 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "VOLTA devices found in Bluetooth range.",
+        "data": {
+          "address": "Device"
+        }
+      },
+      "confirm": {
+        "description": "Add {name} to Home Assistant?"
+      }
+    },
+    "abort": {
+      "already_configured": "This device is already set up.",
+      "no_devices_found": "No VOLTA found in range.",
+      "not_supported": "This device is not supported."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "top_temperature": { "name": "Top temperature" },
+      "side_temperature": { "name": "Side temperature" },
+      "target_side_temperature": { "name": "Target side temperature" },
+      "elapsed": { "name": "Runtime" },
+      "hold_time": { "name": "Hold time" },
+      "preset_slot": { "name": "Preset slot" }
+    },
+    "binary_sensor": {
+      "temp_ready": { "name": "Temperature reached" },
+      "paused": { "name": "Paused" },
+      "wifi": { "name": "Wi-Fi" }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "Gefundene VOLTA-Geräte in Bluetooth-Reichweite.",
+        "data": {
+          "address": "Gerät"
+        }
+      },
+      "confirm": {
+        "description": "{name} zu Home Assistant hinzufügen?"
+      }
+    },
+    "abort": {
+      "already_configured": "Dieses Gerät ist bereits eingerichtet.",
+      "no_devices_found": "Kein VOLTA in Reichweite gefunden.",
+      "not_supported": "Dieses Gerät wird nicht unterstützt."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "top_temperature": { "name": "Temperatur oben" },
+      "side_temperature": { "name": "Temperatur seitlich" },
+      "target_side_temperature": { "name": "Solltemperatur seitlich" },
+      "elapsed": { "name": "Laufzeit" },
+      "hold_time": { "name": "Haltedauer" },
+      "preset_slot": { "name": "Preset-Slot" }
+    },
+    "binary_sensor": {
+      "temp_ready": { "name": "Temperatur erreicht" },
+      "paused": { "name": "Pausiert" },
+      "wifi": { "name": "WLAN" }
+    }
+  }
+}
