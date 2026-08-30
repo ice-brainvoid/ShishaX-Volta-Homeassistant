@@ -235,6 +235,14 @@ class VoltaCoordinator:
         """Set the light mode (0-9)."""
         await self.async_send_params(light_mode=mode)
 
+    async def async_set_hold_time(self, minutes: int) -> None:
+        """Set how long a session holds its target temperature (30-120 minutes)."""
+        await self.async_send_params(hold_time=minutes)
+
+    @property
+    def is_paused(self) -> bool:
+        return bool(self.telemetry and self.telemetry.pause_state)
+
     async def async_boost(self) -> None:
         """Raise the boost counter by one, as the app does."""
         if self._params is None:

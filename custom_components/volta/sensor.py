@@ -74,13 +74,6 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         value=lambda c: c.device_state.custom_side_temp_c if c.device_state else None,
     ),
     VoltaSensorDescription(
-        key="hold_time",
-        translation_key="hold_time",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value=lambda c: c.telemetry.set_time if c.telemetry else None,
-    ),
-    VoltaSensorDescription(
         key="preset_slot",
         translation_key="preset_slot",
         entity_category=EntityCategory.DIAGNOSTIC,

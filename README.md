@@ -82,17 +82,24 @@ only exists for the vendor cloud, which this integration does not use.
 | Entity | Type | Notes |
 |---|---|---|
 | Heater | `climate` | Target temperature 200–320 °C, heat on/off |
+| Pause | `switch` | On means the session is held; off resumes it |
+| Vibration | `number` | Strength of the head's vibration, 0–5 |
+| Light mode | `select` | 0–9. The vendor app only offers 0–5 |
+| Hold time | `number` | 30–120 minutes |
+| Boost | `button` | Raises the boost counter by one |
+| Skip stage | `button` | Advances to the next stage of the preset curve |
 | Battery | `sensor` | Percent |
 | Top temperature | `sensor` | Measured, °C |
 | Side temperature | `sensor` | Measured, °C |
 | Target side temperature | `sensor` | Diagnostic |
 | Runtime | `sensor` | Seconds; counts only while heating |
-| Hold time | `sensor` | Minutes, diagnostic |
 | Preset slot | `sensor` | Diagnostic |
-| Vibration | — | `motorLevel` 0–5, the head's vibration strength; settable via the CLI |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
-| Paused | `binary_sensor` | |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
+
+Turning the pause switch **off** resumes the session, which starts the heater.
+It is therefore ignored unless the device really is paused, so an automation
+cannot light an idle heater as a side effect.
 
 The `climate` entity reports `heating` while ramping up and `idle` once the
 target is reached.

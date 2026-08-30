@@ -20,17 +20,55 @@
   },
   "entity": {
     "sensor": {
-      "top_temperature": { "name": "Top temperature" },
-      "side_temperature": { "name": "Side temperature" },
-      "target_side_temperature": { "name": "Target side temperature" },
-      "elapsed": { "name": "Runtime" },
-      "hold_time": { "name": "Hold time" },
-      "preset_slot": { "name": "Preset slot" }
+      "top_temperature": {
+        "name": "Top temperature"
+      },
+      "side_temperature": {
+        "name": "Side temperature"
+      },
+      "target_side_temperature": {
+        "name": "Target side temperature"
+      },
+      "elapsed": {
+        "name": "Runtime"
+      },
+      "preset_slot": {
+        "name": "Preset slot"
+      }
     },
     "binary_sensor": {
-      "temp_ready": { "name": "Temperature reached" },
-      "paused": { "name": "Paused" },
-      "wifi": { "name": "Wi-Fi" }
+      "temp_ready": {
+        "name": "Temperature reached"
+      },
+      "wifi": {
+        "name": "Wi-Fi"
+      }
+    },
+    "number": {
+      "vibration": {
+        "name": "Vibration"
+      },
+      "hold_time_setting": {
+        "name": "Hold time"
+      }
+    },
+    "select": {
+      "light_mode": {
+        "name": "Light mode"
+      }
+    },
+    "button": {
+      "boost": {
+        "name": "Boost"
+      },
+      "skip_stage": {
+        "name": "Skip stage"
+      }
+    },
+    "switch": {
+      "paused": {
+        "name": "Pause"
+      }
     }
   }
 }

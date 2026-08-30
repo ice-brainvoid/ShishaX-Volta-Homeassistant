@@ -32,11 +32,6 @@ BINARY_SENSORS: tuple[VoltaBinarySensorDescription, ...] = (
         value=lambda c: bool(c.telemetry.temp_ready) if c.telemetry else None,
     ),
     VoltaBinarySensorDescription(
-        key="paused",
-        translation_key="paused",
-        value=lambda c: bool(c.telemetry.pause_state) if c.telemetry else None,
-    ),
-    VoltaBinarySensorDescription(
         key="wifi",
         translation_key="wifi",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
