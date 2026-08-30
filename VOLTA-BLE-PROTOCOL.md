@@ -188,6 +188,19 @@ while idle.
 
 **Stopping:** a single frame with `heatControl=0, pauseState=0`.
 
+### Stop, pause and resume are three different combinations
+
+| Action | `heatControl` | `pauseState` |
+|---|---|---|
+| Stop — end the session | 0 | 0 |
+| Pause — hold the session | 0 | 1 |
+| Resume | 1 | 0 |
+
+Pausing means switching the heater **off** and setting the flag. Sending
+`pauseState=1` while `heatControl` is still 1 is acknowledged with the usual
+`0xA9` and then ignored — confirmed on hardware. The app's `togglePause` builds
+exactly these pairs.
+
 ### 161 `USER_TEMP_TIME` — 19 bytes (write a preset)
 
 ```

@@ -261,9 +261,12 @@ async def cmd_monitor(args) -> int:
                 )
                 print(f">>> BOOST: boostCount {t.boost_count} -> {params.boost_count}")
             if args.pause:
-                params = replace(params, pause_state=1)
+                # Pause is heater off plus the paused flag; the device ignores
+                # pauseState while heatControl is still 1. Stop differs from
+                # pause only in leaving pauseState at 0.
+                params = replace(params, heat_control=0, pause_state=1)
             if args.resume:
-                params = replace(params, pause_state=0)
+                params = replace(params, heat_control=1, pause_state=0)
             if args.start:
                 params = replace(params, heat_control=1, pause_state=0)
             if args.stop:
