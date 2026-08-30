@@ -146,6 +146,7 @@ will not switch the heater off:
 --set-temp N   target temperature in °C
 --preset N     select preset slot 0-14
 --motor N      head vibration strength 0-5
+--light N      light mode 0-9
 --boost        raise the boost counter by one
 --pause        pause a running session
 --resume       resume from pause

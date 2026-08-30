@@ -225,6 +225,10 @@ class VoltaCoordinator:
         """Set the vibration strength of the head (0-5)."""
         await self.async_send_params(motor_level=level)
 
+    async def async_set_light_mode(self, mode: int) -> None:
+        """Set the light mode (0-9)."""
+        await self.async_send_params(light_mode=mode)
+
     async def async_boost(self) -> None:
         """Raise the boost counter by one, as the app does."""
         if self._params is None:

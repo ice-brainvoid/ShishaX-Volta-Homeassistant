@@ -225,7 +225,8 @@ async def cmd_monitor(args) -> int:
 
         wants_param_frame = any(
             (args.echo, args.start, args.stop, args.set_temp, args.boost,
-             args.pause, args.resume, args.preset is not None, args.motor is not None)
+             args.pause, args.resume, args.preset is not None,
+             args.motor is not None, args.light is not None)
         )
         if wants_param_frame:
             try:
@@ -251,6 +252,8 @@ async def cmd_monitor(args) -> int:
                 params = replace(params, preset_choose=args.preset)
             if args.motor is not None:
                 params = replace(params, motor_level=args.motor)
+            if args.light is not None:
+                params = replace(params, light_mode=args.light)
             if args.boost:
                 # The app increments the counter, capped at the maximum.
                 params = replace(
@@ -316,6 +319,9 @@ def main() -> int:
     )
     monitor.add_argument(
         "--motor", type=int, help=f"head vibration level 0-{p.MOTOR_LEVEL_MAX}"
+    )
+    monitor.add_argument(
+        "--light", type=int, help=f"light mode 0-{p.LIGHT_MODE_MAX}"
     )
     monitor.add_argument(
         "--boost", action="store_true", help="raise the boost counter by one"
