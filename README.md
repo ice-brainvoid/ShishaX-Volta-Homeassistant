@@ -12,10 +12,10 @@ and verified against a real device. The full protocol reference is in
 > Reading and writing are both confirmed against real hardware: telemetry,
 > presets and temperatures decode correctly, setting a target temperature and
 > selecting a preset both work, and starting the heater works — the device
-> reported `startHeating=1` and its runtime counter began ticking. Stopping uses
-> the same frame with `heatControl=0` and has not been exercised separately.
-> This integration controls an appliance that reaches 320 °C / 608 °F. Do not
-> leave it unattended while you are testing the controls for the first time.
+> reported `startHeating=1`, its runtime counter began ticking, and the plate
+> went from 29 °C to 279 °C in about a minute. Stopping works too. This
+> integration controls an appliance that reaches 320 °C / 608 °F. Do not leave it
+> unattended while you are testing the controls for the first time.
 > See [Safety](#safety).
 
 ---
@@ -89,6 +89,7 @@ only exists for the vendor cloud, which this integration does not use.
 | Runtime | `sensor` | Seconds; counts only while heating |
 | Hold time | `sensor` | Minutes, diagnostic |
 | Preset slot | `sensor` | Diagnostic |
+| Vibration | — | `motorLevel` 0–5, the head's vibration strength; settable via the CLI |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
 | Paused | `binary_sensor` | |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
@@ -137,9 +138,23 @@ Watch live telemetry:
 ./venv/bin/python tools/volta_cli.py monitor
 ```
 
-Without flags the tool only listens. Commands are sent only with `--set-temp`,
-`--start` or `--stop`. To inspect the exact bytes that *would* be sent, without
-sending them:
+Without flags the tool only listens. Each flag changes just its own field and
+everything else mirrors the device's current state, so a `--motor` while heating
+will not switch the heater off:
+
+```
+--set-temp N   target temperature in °C
+--preset N     select preset slot 0-14
+--motor N      head vibration strength 0-5
+--boost        raise the boost counter by one
+--pause        pause a running session
+--resume       resume from pause
+--skip-stage   skip the current heating stage
+--start        start heating
+--stop         stop heating
+```
+
+To inspect the exact bytes that *would* be sent, without sending them:
 
 ```bash
 ./venv/bin/python tools/volta_cli.py monitor --echo --dry-run

@@ -112,7 +112,7 @@ temperature, duration and preset, and starts or stops heating.
 ```
 [0]  169
 [1]  18
-[2]  lightMode        0–5
+[2]  lightMode        0–9 (the app's UI constant says 5, the builder allows 9)
 [3]  topTemp   HIGH   } BE16, Fn(deci), valid 2000–3200 (200–320 °C)
 [4]  topTemp   LOW    }
 [5]  sideTemp  HIGH   } BE16, Fn(deci), valid 1000–2400 (100–240 °C)
@@ -120,8 +120,8 @@ temperature, duration and preset, and starts or stops heating.
 [7]  holdTime         30–120 (minutes)
 [8]  presetChoose     0–15
 [9]  heatControl      0 = off, 1 = heat
-[10] boostCount       0–12
-[11] motorLevel       0–5
+[10] boostCount       0–12, a counter the app increments by one per boost
+[11] motorLevel       0–5, vibration strength of the head (not a fan)
 [12] audioSwitch      0/1
 [13] tempUnit         0 = °C, 1 = °F (display only)
 [14] presetShow       1–15
@@ -202,6 +202,17 @@ while idle.
 ```
 [0] 193 · [1] 9 · [2] slotIndex · [3..7] 5 × temperature (1 byte, Fn-scaled) · [8] 193
 ```
+
+### 242 `SKIP_STAGE` — 4 bytes
+
+Skips the current heating stage. A standalone opcode, not a parameter frame.
+
+```
+[0] 242 · [1] 4 · [2] 1 · [3] 242
+```
+
+The bundle builds it as `new Uint8Array([xt.SKIP_STAGE, 4, 1, xt.SKIP_STAGE])`
+and logs it as `sent [F2 04 01 F2]`.
 
 ### 162 `DELETE_PRESET` — 4 bytes
 

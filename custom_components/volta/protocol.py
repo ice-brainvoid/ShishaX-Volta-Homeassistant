@@ -64,7 +64,10 @@ SIDE_TEMP_MAX: Final = 240
 SET_TIME_MIN: Final = 30
 SET_TIME_MAX: Final = 120
 BOOST_MAX: Final = 12
-LIGHT_MODE_MAX: Final = 5
+# The app's UI constant is 5, but the frame builder itself validates 0-9, so
+# that is what the device accepts.
+LIGHT_MODE_UI_MAX: Final = 5
+LIGHT_MODE_MAX: Final = 9
 MOTOR_LEVEL_MAX: Final = 5
 HEAT_PRESET_MAX: Final = 14
 PRESET_SHOW_MIN: Final = 1

@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Standalone tool for exercising the VOLTA protocol - without Home Assistant.
 
-With no flags it only listens. Commands are sent exclusively via --set-temp,
---start, --stop or --echo. That is deliberate: the device heats to 320 °C, and
+With no flags it only listens. Commands are sent only when a flag asks for
+one, and each flag changes just its own field - everything else mirrors the
+device's current state. That is deliberate: the device heats to 320 °C, and
 an accidental start while debugging would be unpleasant.
 
     python tools/volta_cli.py scan
     python tools/volta_cli.py monitor
     python tools/volta_cli.py monitor --echo --dry-run
     python tools/volta_cli.py monitor --start --set-temp 280
+    python tools/volta_cli.py monitor --motor 3
+    python tools/volta_cli.py monitor --pause
+    python tools/volta_cli.py monitor --skip-stage
 """
 
 from __future__ import annotations
@@ -219,7 +223,11 @@ async def cmd_monitor(args) -> int:
         await client.start_notify(p.CHAR_UUID, on_notify)
         print("Connected. Waiting for telemetry (Ctrl-C to quit).\n")
 
-        if args.echo or args.start or args.stop or args.set_temp or args.preset is not None:
+        wants_param_frame = any(
+            (args.echo, args.start, args.stop, args.set_temp, args.boost,
+             args.pause, args.resume, args.preset is not None, args.motor is not None)
+        )
+        if wants_param_frame:
             try:
                 await asyncio.wait_for(ready.wait(), timeout=20)
             except TimeoutError:
@@ -232,19 +240,36 @@ async def cmd_monitor(args) -> int:
             # only in the device status - built from telemetry alone the frame
             # would silently reset them to defaults.
             params = p.params_from_state(t, s)
+
+            # Every field starts out mirroring the device, so only what is asked
+            # for changes. In particular heat_control is touched by --start and
+            # --stop alone; otherwise a --motor while heating would switch the
+            # heater off as a side effect.
             if args.set_temp:
                 params = replace(params, top_temp=p.celsius_to_deci(args.set_temp))
             if args.preset is not None:
                 params = replace(params, preset_choose=args.preset)
-            if not args.echo:
-                # --echo leaves the heating state exactly as it is.
+            if args.motor is not None:
+                params = replace(params, motor_level=args.motor)
+            if args.boost:
+                # The app increments the counter, capped at the maximum.
                 params = replace(
-                    params, heat_control=1 if args.start else 0, pause_state=0
+                    params, boost_count=min(params.boost_count + 1, p.BOOST_MAX)
                 )
+                print(f">>> BOOST: boostCount {t.boost_count} -> {params.boost_count}")
+            if args.pause:
+                params = replace(params, pause_state=1)
+            if args.resume:
+                params = replace(params, pause_state=0)
+            if args.start:
+                params = replace(params, heat_control=1, pause_state=0)
+            if args.stop:
+                params = replace(params, heat_control=0, pause_state=0)
 
-            frame = params.encode(supports_f)
             if args.echo:
                 print(">>> ECHO: unchanged parameter set, nothing is altered")
+
+            frame = params.encode(supports_f)
             _explain_frame(frame, params)
 
             if args.dry_run:
@@ -252,6 +277,15 @@ async def cmd_monitor(args) -> int:
             else:
                 print(f">>> sending {frame.hex(' ')}")
                 await write_frame(client, frame)
+
+        if args.skip_stage:
+            # A separate opcode, not a DEVICE_PARAMETER frame.
+            skip = p.encode_skip_stage()
+            print(f">>> SKIP STAGE  {skip.hex(' ')}")
+            if args.dry_run:
+                print(">>> DRY RUN: nothing sent.")
+            else:
+                await write_frame(client, skip)
 
         try:
             while client.is_connected:
@@ -279,6 +313,17 @@ def main() -> int:
         "--preset",
         type=int,
         help=f"select preset slot {0}-{p.HEAT_PRESET_MAX}",
+    )
+    monitor.add_argument(
+        "--motor", type=int, help=f"head vibration level 0-{p.MOTOR_LEVEL_MAX}"
+    )
+    monitor.add_argument(
+        "--boost", action="store_true", help="raise the boost counter by one"
+    )
+    monitor.add_argument("--pause", action="store_true", help="pause a running session")
+    monitor.add_argument("--resume", action="store_true", help="resume from pause")
+    monitor.add_argument(
+        "--skip-stage", action="store_true", help="skip the current heating stage"
     )
     monitor.add_argument("--start", action="store_true", help="start heating")
     monitor.add_argument("--stop", action="store_true", help="stop heating")

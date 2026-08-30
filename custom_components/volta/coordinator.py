@@ -215,7 +215,26 @@ class VoltaCoordinator:
     async def async_stop_heating(self) -> None:
         await self.async_send_params(heat_control=0, pause_state=0)
 
+    async def async_pause(self) -> None:
+        await self.async_send_params(pause_state=1)
+
+    async def async_resume(self) -> None:
+        await self.async_send_params(pause_state=0)
+
+    async def async_set_motor_level(self, level: int) -> None:
+        """Set the vibration strength of the head (0-5)."""
+        await self.async_send_params(motor_level=level)
+
+    async def async_boost(self) -> None:
+        """Raise the boost counter by one, as the app does."""
+        if self._params is None:
+            raise RuntimeError("parameter set incomplete - telemetry and device status missing")
+        await self.async_send_params(
+            boost_count=min(self._params.boost_count + 1, p.BOOST_MAX)
+        )
+
     async def async_skip_stage(self) -> None:
+        """Skip the current heating stage. A separate opcode, not a parameter frame."""
         async with self._lock:
             await self._write(p.encode_skip_stage())
 

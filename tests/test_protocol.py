@@ -273,6 +273,14 @@ class TestDeviceParameter:
         assert f[15] == 1
         assert f[16] == 0
 
+    def test_light_mode_range_follows_the_frame_builder(self):
+        """The builder validates 0-9, not the UI constant of 5."""
+        assert p.LIGHT_MODE_MAX == 9
+        assert p.LIGHT_MODE_UI_MAX == 5
+        assert p.DeviceParameter(light_mode=9).encode()[2] == 9
+        with pytest.raises(ValueError):
+            p.DeviceParameter(light_mode=10).encode()
+
     def test_old_firmware_receives_whole_degrees(self):
         f = p.DeviceParameter(top_temp=2900).encode(supports_f=False)
         assert f[3:5] == frame("01 22")  # 290
@@ -366,6 +374,11 @@ class TestDeviceState:
 class TestOtherCommands:
     def test_delete_preset_matches_the_bundle_literal(self):
         assert p.encode_delete_preset(3) == bytes([162, 4, 3, 162])
+
+    def test_skip_stage_matches_the_bundle_literal(self):
+        # Bundle: new Uint8Array([xt.SKIP_STAGE, 4, 1, xt.SKIP_STAGE]) and its
+        # own log line says "sent [F2 04 01 F2]".
+        assert p.encode_skip_stage() == frame("f2 04 01 f2")
 
     def test_preset_frame_is_19_bytes(self):
         f = p.encode_preset(2, [2000, 2200, 2400, 2600, 2800], [10] * 5)
