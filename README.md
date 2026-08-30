@@ -10,12 +10,14 @@ and verified against a real device. The full protocol reference is in
 
 > **Project status — please read before installing.**
 > The **receive** path (telemetry, presets, temperatures) is confirmed against
-> real hardware. For the **write** path, every one of the 18 bytes of a command
-> frame has been checked against what the device reported about itself at that
-> moment, and the encoder reproduces that frame exactly — but **no frame has
-> actually been transmitted to a device yet**. This integration controls an
-> appliance that reaches 320 °C / 608 °F. Do not leave it unattended while you
-> are testing the controls for the first time. See [Safety](#safety).
+> real hardware. On the **write** path, a command frame has been transmitted to
+> a real device and accepted: no error, the connection stayed up, and the device
+> state was unchanged — which is what that particular frame asked for, since it
+> mirrored the device's own state. **Changing a value has not been tested yet**,
+> so it is not yet proven that the device parses the frame rather than quietly
+> discarding it. This integration controls an appliance that reaches
+> 320 °C / 608 °F. Do not leave it unattended while you are testing the controls
+> for the first time. See [Safety](#safety).
 
 ---
 
