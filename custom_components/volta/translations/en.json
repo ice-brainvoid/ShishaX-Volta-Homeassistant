@@ -54,7 +54,19 @@
     },
     "select": {
       "light_mode": {
-        "name": "Light mode"
+        "name": "Light mode",
+        "state": {
+          "off": "Off",
+          "breathing": "Breathing",
+          "color_cycle": "Color cycle",
+          "white": "White",
+          "blue": "Blue",
+          "green": "Green",
+          "purple": "Purple",
+          "yellow": "Yellow",
+          "orange": "Orange",
+          "red": "Red"
+        }
       }
     },
     "button": {

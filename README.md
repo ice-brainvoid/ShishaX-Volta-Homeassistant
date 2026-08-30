@@ -84,7 +84,7 @@ only exists for the vendor cloud, which this integration does not use.
 | Heater | `climate` | Target temperature 200–320 °C, heat on/off |
 | Pause | `switch` | On means the session is held; off resumes it |
 | Vibration | `number` | Strength of the head's vibration, 0–5 |
-| Light mode | `select` | 0–9. The vendor app only offers 0–5 |
+| Light mode | `select` | Off, breathing, colour cycle, white, blue, green, purple, yellow, orange, red |
 | Hold time | `number` | 30–120 minutes |
 | Boost | `button` | Raises the boost counter by one |
 | Skip stage | `button` | Advances to the next stage of the preset curve |
@@ -204,6 +204,11 @@ side temperature from 170 °C to 200 °C.
 The integration therefore refuses to send anything until **both** packets have
 arrived, and rebuilds the full parameter set from both on every update. If you
 are writing your own client, this is the mistake to avoid.
+
+**The device has light modes the vendor app hides.** `lightMode` accepts 0–9,
+but the official app only offers 0–5. Modes 6 to 9 are purple, yellow, orange
+and red — reachable over the protocol, not through the app. The `Light mode`
+select offers all ten.
 
 **Commands must be written with response.** A write *without* response is
 accepted by the BLE stack without any error and then silently discarded by the

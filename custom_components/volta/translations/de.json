@@ -54,7 +54,19 @@
     },
     "select": {
       "light_mode": {
-        "name": "Lichtmodus"
+        "name": "Lichtmodus",
+        "state": {
+          "off": "Aus",
+          "breathing": "Atmend",
+          "color_cycle": "Lauflicht (RGB)",
+          "white": "Weiß",
+          "blue": "Blau",
+          "green": "Grün",
+          "purple": "Lila",
+          "yellow": "Gelb",
+          "orange": "Orange",
+          "red": "Rot"
+        }
       }
     },
     "button": {

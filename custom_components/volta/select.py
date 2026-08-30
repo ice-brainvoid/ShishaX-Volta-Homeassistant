@@ -1,8 +1,8 @@
 """Light mode selection.
 
-The app's own interface only offers modes 0-5, but the frame builder validates
-0-9, so the higher modes are exposed here too. What each mode looks like is not
-documented anywhere in the bundle.
+The vendor app's interface only offers modes 0-5, but the frame builder
+validates 0-9 and the device really does accept the higher ones - modes 6 to 9
+are four extra colours unreachable through the official app.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ async def async_setup_entry(
 
 class VoltaLightMode(VoltaEntity, SelectEntity):
     _attr_translation_key = "light_mode"
-    _attr_options = [str(mode) for mode in range(p.LIGHT_MODE_MAX + 1)]
+    _attr_options = list(p.LIGHT_MODES.values())
 
     def __init__(self, coordinator: VoltaCoordinator) -> None:
         super().__init__(coordinator)
@@ -37,9 +37,8 @@ class VoltaLightMode(VoltaEntity, SelectEntity):
     def current_option(self) -> str | None:
         if self.coordinator.telemetry is None:
             return None
-        mode = str(self.coordinator.telemetry.light_mode)
-        # A device on an unexpected mode should not make the entity invalid.
-        return mode if mode in self._attr_options else None
+        # An unknown mode leaves the entity without a value rather than failing.
+        return p.LIGHT_MODES.get(self.coordinator.telemetry.light_mode)
 
     async def async_select_option(self, option: str) -> None:
-        await self.coordinator.async_set_light_mode(int(option))
+        await self.coordinator.async_set_light_mode(p.LIGHT_MODE_BY_NAME[option])

@@ -113,7 +113,7 @@ temperature, duration and preset, and starts or stops heating.
 ```
 [0]  169
 [1]  18
-[2]  lightMode        0–9 (the app's UI constant says 5, the builder allows 9)
+[2]  lightMode        0–9, see Light modes below
 [3]  topTemp   HIGH   } BE16, Fn(deci), valid 2000–3200 (200–320 °C)
 [4]  topTemp   LOW    }
 [5]  sideTemp  HIGH   } BE16, Fn(deci), valid 1000–2400 (100–240 °C)
@@ -144,6 +144,25 @@ the field names; `holdTime`, `presetChoose`, `boostCount`, `motorLevel` and
 > builds the command from telemetry alone silently sends defaults for those three.
 > On a real device this moved the side temperature from 170 °C to 200 °C. Wait for
 > both packets before sending anything.
+
+### Light modes
+
+`lightMode` (byte 2) accepts 0-9. The vendor app only exposes 0-5; modes 6 to 9
+are four further colours that are reachable over the protocol but unreachable
+through the official interface. Established by trying every value on a device.
+
+| Value | Mode |
+|---|---|
+| 0 | off |
+| 1 | breathing |
+| 2 | colour cycle (RGB chase) |
+| 3 | white |
+| 4 | blue |
+| 5 | green |
+| 6 | purple |
+| 7 | yellow |
+| 8 | orange |
+| 9 | red |
 
 ### Acknowledgement
 

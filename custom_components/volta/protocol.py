@@ -69,6 +69,22 @@ BOOST_MAX: Final = 12
 LIGHT_MODE_UI_MAX: Final = 5
 LIGHT_MODE_MAX: Final = 9
 MOTOR_LEVEL_MAX: Final = 5
+
+# Established by trying every value on a real device. Modes 6-9 are reachable
+# over the protocol but the vendor app never offers them.
+LIGHT_MODES: Final = {
+    0: "off",
+    1: "breathing",
+    2: "color_cycle",
+    3: "white",
+    4: "blue",
+    5: "green",
+    6: "purple",
+    7: "yellow",
+    8: "orange",
+    9: "red",
+}
+LIGHT_MODE_BY_NAME: Final = {name: mode for mode, name in LIGHT_MODES.items()}
 HEAT_PRESET_MAX: Final = 14
 PRESET_SHOW_MIN: Final = 1
 PRESET_SHOW_MAX: Final = 15
