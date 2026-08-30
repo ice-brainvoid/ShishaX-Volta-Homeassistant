@@ -164,7 +164,14 @@ class VoltaCoordinator:
     async def _write(self, frame: bytes) -> None:
         if self._client is None or not self._client.is_connected:
             raise RuntimeError("not connected")
-        await self._client.write_gatt_char(p.CHAR_UUID, frame, response=False)
+        # Write with response first, mirroring the original app. A write without
+        # response can report success while the device silently drops the frame,
+        # which is exactly what happened during testing.
+        try:
+            await self._client.write_gatt_char(p.CHAR_UUID, frame, response=True)
+        except Exception as err:
+            _LOGGER.debug("%s: write with response failed (%s), retrying without", self.name, err)
+            await self._client.write_gatt_char(p.CHAR_UUID, frame, response=False)
 
     async def async_send_params(self, **changes) -> None:
         """Overwrite the parameter set with changes and send it.

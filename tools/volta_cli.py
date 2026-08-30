@@ -74,6 +74,31 @@ async def read_revision(client: BleakClient) -> tuple[str | None, bool]:
     return revision, supports_f
 
 
+async def write_frame(client: BleakClient, frame: bytes) -> None:
+    """Send a frame, with response first.
+
+    The original app tries writeValue() first, which is a write *with* response.
+    A write without response is its last resort and the bundle notes it "may be
+    fake-success" - it can report success while the device drops the frame.
+    """
+    try:
+        await client.write_gatt_char(p.CHAR_UUID, frame, response=True)
+        print("    (written with response)")
+    except Exception as err:
+        print(f"    write with response failed: {err}")
+        await client.write_gatt_char(p.CHAR_UUID, frame, response=False)
+        print("    (written without response - may be silently dropped)")
+
+
+def _describe_characteristic(client: BleakClient) -> None:
+    """Print what the characteristic actually supports, for diagnosis."""
+    char = client.services.get_characteristic(p.CHAR_UUID)
+    if char is None:
+        print("Characteristic not found.")
+        return
+    print(f"Characteristic properties: {', '.join(char.properties)}")
+
+
 def _explain_frame(frame: bytes, params: p.DeviceParameter) -> None:
     """Break the frame down byte by byte so it can be checked before sending."""
     labels = [
@@ -118,6 +143,7 @@ async def cmd_monitor(args) -> int:
     print(f"Connecting to {device.address} ...")
     async with BleakClient(device) as client:
         _revision, supports_f = await read_revision(client)
+        _describe_characteristic(client)
 
         def on_notify(_sender, data: bytearray) -> None:
             raw = bytes(data)
@@ -219,7 +245,7 @@ async def cmd_monitor(args) -> int:
                 print(">>> DRY RUN: nothing sent.")
             else:
                 print(f">>> sending {frame.hex(' ')}")
-                await client.write_gatt_char(p.CHAR_UUID, frame, response=False)
+                await write_frame(client, frame)
 
         try:
             while client.is_connected:
