@@ -150,17 +150,25 @@ After accepting a `DEVICE_PARAMETER` frame the device sends back a **single
 byte, `0xA9`** — the bare command opcode. That is the only positive confirmation
 available; a dropped frame produces no reply at all.
 
-### The device does not echo every field back
+### A changed temperature clears the preset
 
-Setting `topTemp` manually **deselects the preset**: send `presetChoose=5` along
-with a changed temperature and telemetry afterwards reports `heatPreset=0`. This
-is the device's own behaviour, not a protocol error — a manual temperature
-overrides the preset curve.
+Confirmed on hardware:
 
-The original app knows this. Its post-write verification compares sent against
-received for `lightMode`, `heatControl`, `audioSwitch`, `tempUnit`, `motorLevel`,
-`boostCount` and `pauseState` — and deliberately leaves out `presetChoose` and
-`topTemp`. Do not treat a mismatch on those two as a failure.
+| Frame | Result |
+|---|---|
+| `topTemp` changed, `presetChoose=5` | `heatPreset` becomes **0** — the slot in byte 8 is ignored |
+| `topTemp` unchanged, `presetChoose=5` | `heatPreset` becomes **5** — the selection is adopted |
+
+So `presetChoose` works exactly as documented; a manual temperature simply
+overrides the preset curve and drops the selection. Selecting a preset therefore
+has to happen in a frame that leaves `topTemp` at its current value — which is
+automatic for any client that rebuilds the parameter set from the device's own
+state before each write.
+
+The original app knows about this. Its post-write verification compares sent
+against received for `lightMode`, `heatControl`, `audioSwitch`, `tempUnit`,
+`motorLevel`, `boostCount` and `pauseState` — and deliberately leaves out
+`presetChoose` and `topTemp`. Do not treat a mismatch on those two as a failure.
 
 ### Starting the heater — two stages
 

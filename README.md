@@ -185,10 +185,11 @@ accepted by the BLE stack without any error and then silently discarded by the
 device. It looks like success and does nothing.
 
 **Setting a temperature deselects the preset.** After changing the target
-temperature the device reports preset slot 0, whatever slot was active before.
-That is the device's own behaviour — a manual temperature overrides the preset
-curve — and the official app treats it the same way. Expect the `Preset slot`
-sensor to drop to 0 after any temperature change.
+temperature the device reports preset slot 0, whatever slot was active before —
+a manual temperature overrides the preset curve, and the official app treats it
+the same way. Expect the `Preset slot` sensor to drop to 0 after any temperature
+change. Selecting a preset on its own works fine: in a frame that leaves the
+temperature alone, the device adopts the slot.
 
 ## Safety
 
