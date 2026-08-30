@@ -179,7 +179,12 @@ The device will not accept a preset change and a heat start in one frame:
 2. Wait **200 ms**
 3. Then send `DEVICE_PARAMETER` with `heatControl=1`
 
-If the preset does not change, step 3 alone is enough.
+If the preset does not change, step 3 alone is enough. That single-frame case is
+confirmed on hardware: with the preset already selected, one frame carrying
+`heatControl=1` started the heater. Telemetry reported `startHeating=1`
+immediately and `elapsed` began counting up from zero — the runtime counter is
+the clearest confirmation that heating actually started, since it stays frozen
+while idle.
 
 **Stopping:** a single frame with `heatControl=0, pauseState=0`.
 

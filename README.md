@@ -10,11 +10,13 @@ and verified against a real device. The full protocol reference is in
 
 > **Project status — please read before installing.**
 > Reading and writing are both confirmed against real hardware: telemetry,
-> presets and temperatures decode correctly, and a command changing the target
-> temperature was accepted and applied by the device. **Starting and stopping the
-> heater has not been exercised on a device yet.** This integration controls an
-> appliance that reaches 320 °C / 608 °F. Do not leave it unattended while you
-> are testing the controls for the first time. See [Safety](#safety).
+> presets and temperatures decode correctly, setting a target temperature and
+> selecting a preset both work, and starting the heater works — the device
+> reported `startHeating=1` and its runtime counter began ticking. Stopping uses
+> the same frame with `heatControl=0` and has not been exercised separately.
+> This integration controls an appliance that reaches 320 °C / 608 °F. Do not
+> leave it unattended while you are testing the controls for the first time.
+> See [Safety](#safety).
 
 ---
 
