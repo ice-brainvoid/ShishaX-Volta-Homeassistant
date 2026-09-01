@@ -34,6 +34,9 @@
       },
       "preset_slot": {
         "name": "Preset-Slot"
+      },
+      "stage": {
+        "name": "Stufe"
       }
     },
     "binary_sensor": {

@@ -309,6 +309,28 @@ def params_from_state(telemetry: Telemetry, device_state: DeviceState) -> Device
     )
 
 
+def current_stage(elapsed_seconds: int, stage_minutes: list[int]) -> int | None:
+    """Which stage of a preset curve is running, counting from 1.
+
+    The device reports no stage of its own - the app derives it the same way,
+    from the elapsed time and the preset's per-stage durations. Returns ``None``
+    once the elapsed time has run past the end of the curve.
+
+    Note that a boost extends the session by ten minutes per press, and where
+    that time is added within the curve is not known, so a boosted session can
+    report a stage that is one ahead of the device's own idea.
+    """
+    if not stage_minutes:
+        return None
+    minutes = elapsed_seconds / 60
+    boundary = 0
+    for index, duration in enumerate(stage_minutes, start=1):
+        boundary += duration
+        if minutes < boundary:
+            return index
+    return None
+
+
 def decode_preset(
     data: bytes, supports_f: bool = True
 ) -> tuple[int, list[int], list[int]] | None:

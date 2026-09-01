@@ -121,7 +121,7 @@ temperature, duration and preset, and starts or stops heating.
 [7]  holdTime         30–120 (minutes)
 [8]  presetChoose     0–15
 [9]  heatControl      0 = off, 1 = heat
-[10] boostCount       0–12, a counter the app increments by one per boost
+[10] boostCount       0–12, each press extends the session by 10 minutes
 [11] motorLevel       0–5, vibration strength of the head (not a fan)
 [12] audioSwitch      0/1
 [13] tempUnit         0 = °C, 1 = °F (display only)
@@ -163,6 +163,16 @@ through the official interface. Established by trying every value on a device.
 | 7 | yellow |
 | 8 | orange |
 | 9 | red |
+
+### There is no stage field
+
+The device never reports which stage of a preset curve is running. The app
+derives it from `elapsed` and the preset's per-stage durations, and so does this
+integration. A boost adds ten minutes to the session and where that time lands
+within the curve is not documented, so a boosted session can drift by one stage.
+
+`boostCount` is a count of ten-minute extensions, not an intensity - the app's
+own button is labelled "Boost +10m" and it computes `boostCount * 10` minutes.
 
 ### Acknowledgement
 

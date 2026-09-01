@@ -448,3 +448,35 @@ class TestSideCurve:
         slot, temps = p.decode_side_curve(packet)
         assert slot == 1
         assert temps == [200, 220, 240, 260, 280]
+
+
+class TestCurrentStage:
+    """Preset 4 from a real capture: 8, 20, 20, 10, 10 minutes per stage."""
+
+    TIMES = [8, 20, 20, 10, 10]
+
+    @pytest.mark.parametrize(
+        ("minutes", "expected"),
+        [
+            (0, 1),
+            (7, 1),
+            (8, 2),      # exactly on the boundary belongs to the next stage
+            (27, 2),
+            (28, 3),
+            (47, 3),
+            (48, 4),
+            (58, 5),
+            (67, 5),
+            (68, None),  # past the end of the curve
+            (200, None),
+        ],
+    )
+    def test_stage_from_elapsed_time(self, minutes, expected):
+        assert p.current_stage(minutes * 60, self.TIMES) == expected
+
+    def test_seconds_within_a_stage_do_not_advance_it(self):
+        assert p.current_stage(7 * 60 + 59, self.TIMES) == 1
+        assert p.current_stage(8 * 60 + 1, self.TIMES) == 2
+
+    def test_without_a_curve_there_is_no_stage(self):
+        assert p.current_stage(60, []) is None

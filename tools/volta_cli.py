@@ -259,7 +259,10 @@ async def cmd_monitor(args) -> int:
                 params = replace(
                     params, boost_count=min(params.boost_count + 1, p.BOOST_MAX)
                 )
-                print(f">>> BOOST: boostCount {t.boost_count} -> {params.boost_count}")
+                print(
+                    f">>> BOOST: boostCount {t.boost_count} -> {params.boost_count} "
+                    f"(each press extends the session by 10 minutes)"
+                )
             if args.pause:
                 # Pause is heater off plus the paused flag; the device ignores
                 # pauseState while heatControl is still 1. Stop differs from

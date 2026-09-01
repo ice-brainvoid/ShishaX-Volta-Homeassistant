@@ -92,10 +92,20 @@ only exists for the vendor cloud, which this integration does not use.
 | Top temperature | `sensor` | Measured, °C |
 | Side temperature | `sensor` | Measured, °C |
 | Target side temperature | `sensor` | Setpoint for the side heat, °C |
-| Runtime | `sensor` | Seconds; counts only while heating |
+| Runtime | `sensor` | Counts only while heating; shown in minutes |
+| Stage | `sensor` | Which stage of the preset curve is running, 1–5 |
 | Preset slot | `sensor` | Diagnostic |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
+
+**Stage** is derived, not reported. The device sends no stage number, so the
+integration works it out from the elapsed time and the running preset's stage
+durations — the vendor app does the same. A boost adds ten minutes to the
+session and it is not known where in the curve that time lands, so a boosted
+session can show a stage one ahead of the device's own idea.
+
+**Boost extends the session by ten minutes** per press, up to twelve presses.
+It is a counter of extensions, not an intensity level.
 
 **Hold time** is the length of a session, not the sum of a preset's stage
 durations — the two are independent. The runtime sensor counts towards it.

@@ -38,6 +38,10 @@ class VoltaCoordinator:
 
         self.telemetry: p.Telemetry | None = None
         self.device_state: p.DeviceState | None = None
+        # slot -> per-stage durations in minutes, collected from the preset
+        # packets the device pushes after connecting. Needed to work out which
+        # stage is running, since the device reports no stage of its own.
+        self.preset_times: dict[int, list[int]] = {}
         self.available = False
         self.software_revision: str | None = None
 
@@ -150,8 +154,15 @@ class VoltaCoordinator:
                 return
             self.device_state = state
 
+        elif raw[0] == p.RSP_PRESET_READ:
+            decoded = p.decode_preset(raw, self._supports_f)
+            if decoded is not None:
+                slot, _temps, times = decoded
+                self.preset_times[slot] = times
+            return
+
         else:
-            # Preset, name and Wi-Fi packets are of no interest to the entities.
+            # Name and Wi-Fi packets are of no interest to the entities.
             return
 
         if self.telemetry is not None and self.device_state is not None:
@@ -242,6 +253,23 @@ class VoltaCoordinator:
     @property
     def is_paused(self) -> bool:
         return bool(self.telemetry and self.telemetry.pause_state)
+
+    @property
+    def current_stage(self) -> int | None:
+        """Stage of the running preset curve, counting from 1."""
+        if self.telemetry is None or not self.telemetry.start_heating:
+            return None
+        times = self.preset_times.get(self.telemetry.heat_preset)
+        if not times:
+            return None
+        return p.current_stage(self.telemetry.elapsed, times)
+
+    @property
+    def stage_count(self) -> int | None:
+        if self.telemetry is None:
+            return None
+        times = self.preset_times.get(self.telemetry.heat_preset)
+        return len(times) if times else None
 
     async def async_boost(self) -> None:
         """Raise the boost counter by one, as the app does."""

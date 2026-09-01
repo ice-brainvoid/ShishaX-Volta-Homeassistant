@@ -60,7 +60,11 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         translation_key="elapsed",
         # Seconds, not minutes - in a capture the value ticks up once per second.
         device_class=SensorDeviceClass.DURATION,
+        # The device counts seconds; Home Assistant converts for display and the
+        # raw value stays exact.
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.MINUTES,
+        suggested_display_precision=0,
         state_class=SensorStateClass.MEASUREMENT,
         value=lambda c: c.telemetry.elapsed if c.telemetry else None,
     ),
@@ -70,6 +74,11 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         value=lambda c: c.device_state.custom_side_temp_c if c.device_state else None,
+    ),
+    VoltaSensorDescription(
+        key="stage",
+        translation_key="stage",
+        value=lambda c: c.current_stage,
     ),
     VoltaSensorDescription(
         key="preset_slot",
