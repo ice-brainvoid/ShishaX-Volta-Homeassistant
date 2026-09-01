@@ -11,7 +11,7 @@ from homeassistant.components.number import (
     NumberMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory, UnitOfTime
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -46,7 +46,6 @@ NUMBERS: tuple[VoltaNumberDescription, ...] = (
         native_step=1,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         mode=NumberMode.BOX,
-        entity_category=EntityCategory.CONFIG,
         value=lambda c: c.telemetry.set_time if c.telemetry else None,
         set_value=lambda c, v: c.async_set_hold_time(v),
     ),

@@ -32,7 +32,6 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         # The device reports 255 when no reading is available.
         value=lambda c: (
             c.telemetry.battery
@@ -70,7 +69,6 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         translation_key="target_side_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value=lambda c: c.device_state.custom_side_temp_c if c.device_state else None,
     ),
     VoltaSensorDescription(

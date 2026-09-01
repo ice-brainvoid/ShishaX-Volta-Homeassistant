@@ -85,17 +85,20 @@ only exists for the vendor cloud, which this integration does not use.
 | Pause | `switch` | On means the session is held; off resumes it |
 | Vibration | `number` | Strength of the head's vibration, 0–5 |
 | Light mode | `select` | Off, breathing, colour cycle, white, blue, green, purple, yellow, orange, red |
-| Hold time | `number` | 30–120 minutes |
+| Hold time | `number` | How long a session holds its temperature, 30–120 minutes |
 | Boost | `button` | Raises the boost counter by one |
 | Skip stage | `button` | Advances to the next stage of the preset curve |
 | Battery | `sensor` | Percent |
 | Top temperature | `sensor` | Measured, °C |
 | Side temperature | `sensor` | Measured, °C |
-| Target side temperature | `sensor` | Diagnostic |
+| Target side temperature | `sensor` | Setpoint for the side heat, °C |
 | Runtime | `sensor` | Seconds; counts only while heating |
 | Preset slot | `sensor` | Diagnostic |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
+
+**Hold time** is the length of a session, not the sum of a preset's stage
+durations — the two are independent. The runtime sensor counts towards it.
 
 Turning the pause switch **off** resumes the session, which starts the heater.
 It is therefore ignored unless the device really is paused, so an automation
