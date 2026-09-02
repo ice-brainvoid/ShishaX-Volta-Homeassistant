@@ -11,6 +11,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
 
+from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant, callback
 
 from . import protocol as p
@@ -50,6 +51,9 @@ class VoltaCoordinator:
         self._params: p.DeviceParameter | None = None
         self._listeners: list[Callable[[], None]] = []
         self._lock = asyncio.Lock()
+        # Guards against the watchdog and the Bluetooth callback both
+        # starting an attempt; a connect can take up to CONNECT_TIMEOUT.
+        self._connecting = False
         # One command overwrites every field, and those fields are split across
         # both packets. Both must have arrived before anything may be sent.
         self._state_complete = asyncio.Event()
@@ -99,6 +103,37 @@ class VoltaCoordinator:
                 self.telemetry is not None,
                 self.device_state is not None,
             )
+
+    async def async_ensure_connected(self, ble_device: BLEDevice | None = None) -> bool:
+        """Connect unless a live connection already exists.
+
+        Safe to call as often as wanted - both the Bluetooth callback and the
+        watchdog use this. Returns whether a connection is up afterwards.
+        """
+        # A dropped link does not always reach the disconnect callback, so
+        # verify rather than trusting the flag.
+        if self._client is not None and not self._client.is_connected:
+            self.available = False
+
+        if self.available or self._connecting:
+            return self.available
+
+        if ble_device is None:
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, self.address.upper(), connectable=True
+            )
+        if ble_device is None:
+            _LOGGER.debug("%s: not in range, nothing to connect to", self.name)
+            return False
+
+        self._connecting = True
+        try:
+            await self.async_connect(ble_device)
+        except Exception as err:
+            _LOGGER.debug("%s: connection attempt failed: %s", self.name, err)
+        finally:
+            self._connecting = False
+        return self.available
 
     async def _read_software_revision(self) -> None:
         """The firmware revision decides whether temperatures travel as tenths."""

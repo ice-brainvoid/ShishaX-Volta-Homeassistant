@@ -223,6 +223,14 @@ but the official app only offers 0–5. Modes 6 to 9 are purple, yellow, orange
 and red — reachable over the protocol, not through the app. The `Light mode`
 select offers all ten.
 
+**The connection is watched on two paths.** Home Assistant's Bluetooth callback
+reconnects as soon as the device advertises again, and a watchdog additionally
+retries once a minute. The second path matters because a failed attempt or a
+missed advertisement would otherwise leave the device unavailable until it
+happens to advertise again. Both funnel through one guarded routine, so they
+never start overlapping attempts, and a retry costs nothing while the device is
+connected or out of range.
+
 **Commands must be written with response.** A write *without* response is
 accepted by the BLE stack without any error and then silently discarded by the
 device. It looks like success and does nothing.

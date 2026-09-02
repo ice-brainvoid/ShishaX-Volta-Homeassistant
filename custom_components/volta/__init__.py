@@ -7,10 +7,11 @@ import logging
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN
+from .const import DOMAIN, WATCHDOG_INTERVAL
 from .coordinator import VoltaCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,32 +42,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Reconnect as soon as the device advertises again.
+    @callback
+    def _on_advertisement(service_info, change) -> None:
+        hass.async_create_task(coordinator.async_ensure_connected(service_info.device))
+
     entry.async_on_unload(
         bluetooth.async_register_callback(
             hass,
-            _make_reconnect_callback(coordinator),
+            _on_advertisement,
             {"address": address.upper(), "connectable": True},
             bluetooth.BluetoothScanningMode.ACTIVE,
         )
     )
+
+    # Second path: the callback only fires while the device advertises, so retry
+    # on a schedule as well. Costs nothing when already connected or out of range.
+    async def _watchdog(_now) -> None:
+        await coordinator.async_ensure_connected()
+
+    entry.async_on_unload(async_track_time_interval(hass, _watchdog, WATCHDOG_INTERVAL))
     return True
-
-
-def _make_reconnect_callback(coordinator: VoltaCoordinator):
-    """Reconnect after a dropped connection as soon as the device advertises again."""
-
-    async def _reconnect(service_info, change) -> None:
-        if coordinator.available:
-            return
-        try:
-            await coordinator.async_connect(service_info.device)
-        except Exception as err:
-            _LOGGER.debug("Reconnect failed: %s", err)
-
-    def _callback(service_info, change) -> None:
-        coordinator.hass.async_create_task(_reconnect(service_info, change))
-
-    return _callback
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
