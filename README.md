@@ -223,6 +223,12 @@ but the official app only offers 0–5. Modes 6 to 9 are purple, yellow, orange
 and red — reachable over the protocol, not through the app. The `Light mode`
 select offers all ten.
 
+**Setup never depends on the device being reachable.** The VOLTA switches its
+radio off completely while asleep, so an integration that insisted on a
+connection at startup would fail every time Home Assistant restarted with the
+hookah switched off — and leave the entry needing a manual reload. The entry
+always comes up instead; entities stay unavailable until a connection exists.
+
 **The connection is watched on two paths.** Home Assistant's Bluetooth callback
 reconnects as soon as the device advertises again, and a watchdog additionally
 retries once a minute. The second path matters because a failed attempt or a

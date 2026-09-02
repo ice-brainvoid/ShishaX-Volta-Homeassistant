@@ -15,7 +15,7 @@ from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant, callback
 
 from . import protocol as p
-from .const import CONNECT_TIMEOUT
+from .const import CONNECT_ATTEMPTS, CONNECT_TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,6 +85,7 @@ class VoltaCoordinator:
                 self.name,
                 self._on_disconnect,
                 timeout=CONNECT_TIMEOUT,
+                max_attempts=CONNECT_ATTEMPTS,
             )
             await self._read_software_revision()
             await self._client.start_notify(p.CHAR_UUID, self._on_notify)

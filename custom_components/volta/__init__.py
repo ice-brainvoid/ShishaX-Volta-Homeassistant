@@ -8,7 +8,6 @@ from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.event import async_track_time_interval
 
 from .const import DOMAIN, WATCHDOG_INTERVAL
@@ -28,24 +27,29 @@ PLATFORMS: list[Platform] = [
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up the entry.
+
+    Setup deliberately does not depend on the device being reachable. The VOLTA
+    switches its radio off entirely while asleep, so requiring a connection here
+    would fail every time Home Assistant restarts with the hookah switched off,
+    and leave the entry needing a manual reload. Instead the entry always comes
+    up, entities stay unavailable until a connection exists, and the callback
+    and watchdog below connect as soon as the device is back.
+    """
     address: str = entry.data[CONF_ADDRESS]
-    ble_device = bluetooth.async_ble_device_from_address(hass, address.upper(), connectable=True)
-    if ble_device is None:
-        raise ConfigEntryNotReady(f"VOLTA {address} not in range")
-
     coordinator = VoltaCoordinator(hass, address, entry.title)
-    try:
-        await coordinator.async_connect(ble_device)
-    except Exception as err:  # bleak raises very differently depending on the backend
-        raise ConfigEntryNotReady(f"Connection to {address} failed: {err}") from err
-
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Reconnect as soon as the device advertises again.
+    # Connect as soon as the device advertises again.
     @callback
     def _on_advertisement(service_info, change) -> None:
-        hass.async_create_task(coordinator.async_ensure_connected(service_info.device))
+        entry.async_create_background_task(
+            hass,
+            coordinator.async_ensure_connected(service_info.device),
+            "volta-connect-on-advertisement",
+        )
 
     entry.async_on_unload(
         bluetooth.async_register_callback(
@@ -62,6 +66,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.async_ensure_connected()
 
     entry.async_on_unload(async_track_time_interval(hass, _watchdog, WATCHDOG_INTERVAL))
+
+    # One attempt right away, allowed to fail - the device is often asleep.
+    entry.async_create_background_task(
+        hass, coordinator.async_ensure_connected(), "volta-initial-connect"
+    )
     return True
 
 
