@@ -23,3 +23,7 @@ CONNECT_ATTEMPTS: Final = 6
 # path retries on a fixed schedule, so a failed attempt or a missed
 # advertisement does not leave the device unavailable indefinitely.
 WATCHDOG_INTERVAL: Final = timedelta(seconds=60)
+
+# Pause after an unexpected drop before trying again. Long enough for the
+# stack to tidy up, short enough that entities are not dead for a minute.
+RECONNECT_DELAY: Final = 3

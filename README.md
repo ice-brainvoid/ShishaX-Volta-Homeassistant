@@ -97,6 +97,8 @@ only exists for the vendor cloud, which this integration does not use.
 | Preset slot | `sensor` | Diagnostic |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
+| Connected | `binary_sensor` | Whether a BLE link exists; stays visible while it does not |
+| Reconnect | `button` | Drops any link and builds a fresh one |
 
 **Presets are picked on the climate entity.** The device sends its preset names
 after connecting, so they appear as preset modes — *Dark Leaf*, *Blonde Clouds*
@@ -238,6 +240,13 @@ radio off completely while asleep, so an integration that insisted on a
 connection at startup would fail every time Home Assistant restarted with the
 hookah switched off — and leave the entry needing a manual reload. The entry
 always comes up instead; entities stay unavailable until a connection exists.
+
+**Dropped links come back on their own.** A disconnect triggers a retry after a
+few seconds rather than waiting for the next watchdog tick, so entities are not
+dead for a minute. The `Connected` sensor stays available throughout and counts
+the drops in its attributes — useful for telling a flaky radio apart from a
+device that simply went to sleep. `Reconnect` forces a fresh link, which the
+watchdog will not do while it believes one is already up.
 
 **The connection is watched on two paths.** Home Assistant's Bluetooth callback
 reconnects as soon as the device advertises again, and a watchdog additionally

@@ -45,6 +45,9 @@
       },
       "wifi": {
         "name": "Wi-Fi"
+      },
+      "connected": {
+        "name": "Connected"
       }
     },
     "number": {
@@ -78,6 +81,9 @@
       },
       "skip_stage": {
         "name": "Skip stage"
+      },
+      "reconnect": {
+        "name": "Reconnect"
       }
     },
     "switch": {

@@ -45,9 +45,43 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: VoltaCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
+    entities: list[VoltaEntity] = [
         VoltaBinarySensor(coordinator, description) for description in BINARY_SENSORS
-    )
+    ]
+    entities.append(VoltaConnected(coordinator))
+    async_add_entities(entities)
+
+
+class VoltaConnected(VoltaEntity, BinarySensorEntity):
+    """Whether a BLE link to the device currently exists.
+
+    Unlike every other entity this stays available while disconnected - the one
+    thing that reports the connection must not vanish exactly when it drops.
+    """
+
+    _attr_translation_key = "connected"
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: VoltaCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.address}_connected"
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.available
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        return {
+            "disconnects": self.coordinator.disconnects,
+            "last_connected": self.coordinator.last_connected,
+            "last_disconnected": self.coordinator.last_disconnected,
+        }
 
 
 class VoltaBinarySensor(VoltaEntity, BinarySensorEntity):

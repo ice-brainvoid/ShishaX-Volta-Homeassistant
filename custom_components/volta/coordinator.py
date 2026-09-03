@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime
 from collections.abc import Callable
 from dataclasses import replace
 
@@ -13,9 +14,10 @@ from bleak_retry_connector import establish_connection
 
 from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.util import dt as dt_util
 
 from . import protocol as p
-from .const import CONNECT_ATTEMPTS, CONNECT_TIMEOUT
+from .const import CONNECT_ATTEMPTS, CONNECT_TIMEOUT, RECONNECT_DELAY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +50,11 @@ class VoltaCoordinator:
         self._name_parts: dict[int, list[str]] = {}
         self.available = False
         self.software_revision: str | None = None
+        # Connection history, so a pattern of drops can be seen in Home Assistant
+        # rather than only in the logs.
+        self.disconnects = 0
+        self.last_connected: datetime | None = None
+        self.last_disconnected: datetime | None = None
 
         self._client: BleakClient | None = None
         self._supports_f = True
@@ -93,6 +100,7 @@ class VoltaCoordinator:
             await self._read_software_revision()
             await self._client.start_notify(p.CHAR_UUID, self._on_notify)
             self.available = True
+            self.last_connected = dt_util.utcnow()
             _LOGGER.debug("%s: connected, notifications active", self.name)
 
         # The device pushes telemetry and status on its own; without both we do
@@ -166,13 +174,33 @@ class VoltaCoordinator:
 
     @callback
     def _on_disconnect(self, _client: BleakClient) -> None:
-        _LOGGER.debug("%s: disconnected", self.name)
+        self.disconnects += 1
+        self.last_disconnected = dt_util.utcnow()
+        _LOGGER.debug("%s: disconnected (%s so far)", self.name, self.disconnects)
         self.available = False
         self._client = None
         # After a reconnect, only send again once both packets have arrived anew.
         self._state_complete.clear()
         self._params = None
         self._notify_listeners()
+        # Do not wait for the watchdog. A drop while the device is still in range
+        # is usually transient, and a minute of dead entities is a long time.
+        self.hass.async_create_task(self._reconnect_soon())
+
+    async def _reconnect_soon(self) -> None:
+        """Retry shortly after a drop, giving the stack a moment to settle."""
+        await asyncio.sleep(RECONNECT_DELAY)
+        await self.async_ensure_connected()
+
+    async def async_force_reconnect(self) -> None:
+        """Drop whatever link may exist and build a fresh one.
+
+        The watchdog skips work while it believes a connection is up, so a link
+        that is technically open but no longer delivering needs this.
+        """
+        _LOGGER.debug("%s: forced reconnect requested", self.name)
+        await self.async_disconnect()
+        await self.async_ensure_connected()
 
     @callback
     def _on_notify(self, _sender, data: bytearray) -> None:

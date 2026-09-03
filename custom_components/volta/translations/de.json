@@ -45,6 +45,9 @@
       },
       "wifi": {
         "name": "WLAN"
+      },
+      "connected": {
+        "name": "Verbunden"
       }
     },
     "number": {
@@ -78,6 +81,9 @@
       },
       "skip_stage": {
         "name": "Stufe überspringen"
+      },
+      "reconnect": {
+        "name": "Neu verbinden"
       }
     },
     "switch": {
