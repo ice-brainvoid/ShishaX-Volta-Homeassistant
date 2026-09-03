@@ -13,6 +13,7 @@ from homeassistant.components.climate import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import protocol as p
@@ -32,7 +33,7 @@ class VoltaClimate(VoltaEntity, ClimateEntity):
     _attr_name = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT]
-    _attr_supported_features = (
+    _BASE_FEATURES = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
@@ -46,6 +47,37 @@ class VoltaClimate(VoltaEntity, ClimateEntity):
     def __init__(self, coordinator: VoltaCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = coordinator.address
+
+    @property
+    def supported_features(self) -> ClimateEntityFeature:
+        """Offer preset selection only once the device has reported presets.
+
+        They arrive as separate packets shortly after connecting, so declaring
+        the feature up front would leave an empty list on screen.
+        """
+        if self.coordinator.preset_labels:
+            return self._BASE_FEATURES | ClimateEntityFeature.PRESET_MODE
+        return self._BASE_FEATURES
+
+    @property
+    def preset_modes(self) -> list[str] | None:
+        return list(self.coordinator.preset_labels) or None
+
+    @property
+    def preset_mode(self) -> str | None:
+        return self.coordinator.preset_label
+
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        """Select a preset, leaving the temperature untouched.
+
+        The device drops the selection if a changed temperature rides along in
+        the same frame, so this sends nothing else. Turning the entity on
+        afterwards starts heating with that preset.
+        """
+        slot = self.coordinator.preset_labels.get(preset_mode)
+        if slot is None:
+            raise HomeAssistantError(f"Unknown preset: {preset_mode}")
+        await self.coordinator.async_select_preset(slot)
 
     @property
     def current_temperature(self) -> float | None:
@@ -80,6 +112,10 @@ class VoltaClimate(VoltaEntity, ClimateEntity):
             "elapsed_seconds": telemetry.elapsed,
             "boost_count": telemetry.boost_count,
             "temp_ready": bool(telemetry.temp_ready),
+            "stage": self.coordinator.current_stage,
+            # True when no session is running at all: not heating, not paused,
+            # nothing elapsed. Handy as an automation condition.
+            "idle": self.coordinator.is_idle,
             "software_revision": self.coordinator.software_revision,
         }
 

@@ -81,7 +81,7 @@ only exists for the vendor cloud, which this integration does not use.
 
 | Entity | Type | Notes |
 |---|---|---|
-| Heater | `climate` | Target temperature 200–320 °C, heat on/off |
+| Heater | `climate` | Target temperature 200–320 °C, heat on/off, preset selection |
 | Pause | `switch` | On means the session is held; off resumes it |
 | Vibration | `number` | Strength of the head's vibration, 0–5 |
 | Light mode | `select` | Off, breathing, colour cycle, white, blue, green, purple, yellow, orange, red |
@@ -97,6 +97,16 @@ only exists for the vendor cloud, which this integration does not use.
 | Preset slot | `sensor` | Diagnostic |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
+
+**Presets are picked on the climate entity.** The device sends its preset names
+after connecting, so they appear as preset modes — *Dark Leaf*, *Blonde Clouds*
+and so on, whatever yours are called. Pick one while the heater is off, then
+turn it on: the session starts on that preset. Selecting a preset deliberately
+sends nothing but the slot, because a changed temperature in the same frame
+makes the device drop the selection.
+
+The climate entity also carries an `idle` attribute — true when no session is
+running at all — which is a convenient condition for automations.
 
 **Stage** is derived, not reported. The device sends no stage number, so the
 integration works it out from the elapsed time and the running preset's stage

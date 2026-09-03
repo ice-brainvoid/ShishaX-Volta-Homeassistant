@@ -43,6 +43,9 @@ class VoltaCoordinator:
         # packets the device pushes after connecting. Needed to work out which
         # stage is running, since the device reports no stage of its own.
         self.preset_times: dict[int, list[int]] = {}
+        # slot -> preset name, assembled from the two halves the device sends.
+        self.preset_names: dict[int, str] = {}
+        self._name_parts: dict[int, list[str]] = {}
         self.available = False
         self.software_revision: str | None = None
 
@@ -195,10 +198,23 @@ class VoltaCoordinator:
             if decoded is not None:
                 slot, _temps, times = decoded
                 self.preset_times[slot] = times
+                self._notify_listeners()
+            return
+
+        elif raw[0] in (p.RSP_OPTION_NAME_1, p.RSP_OPTION_NAME_2):
+            decoded = p.decode_option_name(raw)
+            if decoded is not None:
+                slot, part, text = decoded
+                parts = self._name_parts.setdefault(slot, ["", ""])
+                parts[part] = text
+                name = "".join(parts).strip()
+                if name:
+                    self.preset_names[slot] = name
+                    self._notify_listeners()
             return
 
         else:
-            # Name and Wi-Fi packets are of no interest to the entities.
+            # Wi-Fi packets are of no interest to the entities.
             return
 
         if self.telemetry is not None and self.device_state is not None:
@@ -289,6 +305,46 @@ class VoltaCoordinator:
     @property
     def is_paused(self) -> bool:
         return bool(self.telemetry and self.telemetry.pause_state)
+
+    @property
+    def preset_labels(self) -> dict[str, int]:
+        """Label -> slot, for every preset the device has told us about.
+
+        Slots without a name fall back to "Preset N", and a name used twice gets
+        its slot appended, because Home Assistant needs the options to be unique.
+        """
+        labels: dict[str, int] = {}
+        seen: dict[str, int] = {}
+        for slot in sorted(set(self.preset_names) | set(self.preset_times)):
+            base = self.preset_names.get(slot) or f"Preset {slot}"
+            seen[base] = seen.get(base, 0) + 1
+            label = base if seen[base] == 1 else f"{base} ({slot})"
+            labels[label] = slot
+        return labels
+
+    @property
+    def preset_label(self) -> str | None:
+        """Label of the preset the device currently has selected."""
+        if self.telemetry is None:
+            return None
+        for label, slot in self.preset_labels.items():
+            if slot == self.telemetry.heat_preset:
+                return label
+        return None
+
+    async def async_select_preset(self, slot: int) -> None:
+        """Select a preset without touching the temperature.
+
+        Sending a changed temperature in the same frame makes the device drop
+        the selection, so this deliberately changes nothing else.
+        """
+        await self.async_send_params(preset_choose=slot)
+
+    @property
+    def is_idle(self) -> bool:
+        """No session running: not heating, not paused, nothing elapsed."""
+        t = self.telemetry
+        return bool(t and not t.start_heating and not t.pause_state and not t.elapsed)
 
     @property
     def current_stage(self) -> int | None:
