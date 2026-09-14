@@ -139,9 +139,29 @@ bridges the gap. Any classic ESP32 works — around €10–15.
 
 A ready-to-use configuration is included as
 [`esphome/volta-proxy.yaml`](esphome/volta-proxy.yaml). Flash it through the
-ESPHome dashboard, fill in your `secrets.yaml`, and plug the board in near the
-hookah. Home Assistant picks up the proxy automatically; no change to this
-integration is needed.
+ESPHome dashboard, fill in your `secrets.yaml`, and plug the board in. Home
+Assistant picks up the proxy automatically; no change to this integration is
+needed.
+
+### Where to put the proxy
+
+**Good Wi-Fi first, Bluetooth second.** The instinct is to put the proxy right
+next to the hookah, but the proxy also has to reach Home Assistant over Wi-Fi,
+and an ESP32 has a tiny 2.4 GHz antenna. A weak Wi-Fi link shows up as
+Bluetooth trouble: every stall on the Wi-Fi side drops the API session to Home
+Assistant, and every Bluetooth connection through the proxy dies with it. That
+looks exactly like a flaky Bluetooth link and is easy to chase in the wrong
+direction.
+
+Bluetooth reaches further than people expect — several metres, one wall — so
+start with the proxy where Wi-Fi is strong and only move it towards the hookah
+if the `Connected` sensor does not come on. The proxy exposes its own
+`Wi-Fi signal` sensor; keep it better than about −70 dBm. If no spot satisfies
+both, a Wi-Fi repeater near the hookah or an ESP32 board with an Ethernet port
+(ESPHome supports `ethernet:` in place of `wifi:`) settles it for good.
+
+The included config keeps the BLE scan duty low and Wi-Fi power saving off, so
+the single radio is not starved by scanning while it also holds a connection.
 
 The important part of that config is:
 
