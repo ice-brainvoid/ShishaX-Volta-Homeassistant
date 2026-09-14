@@ -375,6 +375,34 @@ class VoltaCoordinator:
         return bool(t and not t.start_heating and not t.pause_state and not t.elapsed)
 
     @property
+    def session_active(self) -> bool:
+        """A session exists: heating, or paused mid-session."""
+        t = self.telemetry
+        return bool(t and (t.start_heating or t.pause_state))
+
+    @property
+    def remaining_seconds(self) -> int | None:
+        """Seconds left in the running session, or ``None`` when there is none."""
+        if not self.session_active:
+            return None
+        t = self.telemetry
+        return p.remaining_seconds(t.elapsed, t.set_time, t.boost_count)
+
+    @property
+    def is_preheating(self) -> bool | None:
+        """True during the first stage of a running preset, False in any later one.
+
+        ``None`` while a session runs on a preset whose curve is unknown, since
+        the stage cannot be told then. Off when no session runs.
+        """
+        if not self.session_active:
+            return False
+        stage = self.current_stage
+        if stage is None:
+            return None
+        return stage == 1
+
+    @property
     def current_stage(self) -> int | None:
         """Stage of the running preset curve, counting from 1."""
         if self.telemetry is None or not self.telemetry.start_heating:

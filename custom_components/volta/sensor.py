@@ -76,6 +76,16 @@ SENSORS: tuple[VoltaSensorDescription, ...] = (
         value=lambda c: c.device_state.custom_side_temp_c if c.device_state else None,
     ),
     VoltaSensorDescription(
+        key="remaining",
+        translation_key="remaining",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.MINUTES,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+        value=lambda c: c.remaining_seconds,
+    ),
+    VoltaSensorDescription(
         key="stage",
         translation_key="stage",
         value=lambda c: c.current_stage,

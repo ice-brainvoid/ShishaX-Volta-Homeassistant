@@ -32,6 +32,12 @@ BINARY_SENSORS: tuple[VoltaBinarySensorDescription, ...] = (
         value=lambda c: bool(c.telemetry.temp_ready) if c.telemetry else None,
     ),
     VoltaBinarySensorDescription(
+        key="preheating",
+        translation_key="preheating",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        value=lambda c: c.is_preheating,
+    ),
+    VoltaBinarySensorDescription(
         key="wifi",
         translation_key="wifi",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,

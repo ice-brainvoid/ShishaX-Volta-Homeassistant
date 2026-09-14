@@ -480,3 +480,20 @@ class TestCurrentStage:
 
     def test_without_a_curve_there_is_no_stage(self):
         assert p.current_stage(60, []) is None
+
+
+class TestRemainingSeconds:
+    def test_full_session_at_start(self):
+        assert p.remaining_seconds(0, 30, 0) == 30 * 60
+
+    def test_counts_down_with_elapsed(self):
+        assert p.remaining_seconds(62, 30, 0) == 30 * 60 - 62
+
+    def test_each_boost_adds_ten_minutes(self):
+        assert p.remaining_seconds(0, 30, 1) == 40 * 60
+        assert p.remaining_seconds(0, 30, 3) == 60 * 60
+
+    def test_never_negative(self):
+        # A session that has overrun its hold time - seen on hardware, where
+        # elapsed reached 68 minutes of a 30 minute hold.
+        assert p.remaining_seconds(68 * 60, 30, 0) == 0

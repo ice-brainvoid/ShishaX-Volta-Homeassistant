@@ -37,6 +37,9 @@
       },
       "stage": {
         "name": "Stufe"
+      },
+      "remaining": {
+        "name": "Restlaufzeit"
       }
     },
     "binary_sensor": {
@@ -48,6 +51,9 @@
       },
       "connected": {
         "name": "Verbunden"
+      },
+      "preheating": {
+        "name": "Vorheizen"
       }
     },
     "number": {

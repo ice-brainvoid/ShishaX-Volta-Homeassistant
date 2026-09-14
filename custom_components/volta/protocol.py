@@ -64,6 +64,8 @@ SIDE_TEMP_MAX: Final = 240
 SET_TIME_MIN: Final = 30
 SET_TIME_MAX: Final = 120
 BOOST_MAX: Final = 12
+# Each boost press extends the session by this many minutes.
+BOOST_MINUTES: Final = 10
 # The app's UI constant is 5, but the frame builder itself validates 0-9, so
 # that is what the device accepts.
 LIGHT_MODE_UI_MAX: Final = 5
@@ -307,6 +309,16 @@ def params_from_state(telemetry: Telemetry, device_state: DeviceState) -> Device
         preset_show=device_state.preset_show,
         screen_saver=device_state.screen_saver,
     )
+
+
+def remaining_seconds(elapsed_seconds: int, hold_minutes: int, boost_count: int) -> int:
+    """Seconds left in a session: hold time plus boost extensions, minus elapsed.
+
+    Each boost adds ten minutes. Never negative - a session that has overrun
+    its hold time reports zero rather than counting up.
+    """
+    total = (hold_minutes + boost_count * BOOST_MINUTES) * 60
+    return max(0, total - elapsed_seconds)
 
 
 def current_stage(elapsed_seconds: int, stage_minutes: list[int]) -> int | None:

@@ -93,9 +93,11 @@ only exists for the vendor cloud, which this integration does not use.
 | Side temperature | `sensor` | Measured, °C |
 | Target side temperature | `sensor` | Setpoint for the side heat, °C |
 | Runtime | `sensor` | Counts only while heating; shown in minutes |
+| Remaining time | `sensor` | Hold time plus boosts, minus runtime; empty when no session runs |
 | Stage | `sensor` | Which stage of the preset curve is running, 1–5 |
 | Preset slot | `sensor` | Diagnostic |
 | Temperature reached | `binary_sensor` | Only meaningful while heating |
+| Preheating | `binary_sensor` | On during the first stage of the preset curve, off in every later one |
 | Wi-Fi | `binary_sensor` | Whether the device itself is on Wi-Fi |
 | Connected | `binary_sensor` | Whether a BLE link exists; stays visible while it does not |
 | Reconnect | `button` | Drops any link and builds a fresh one |
@@ -115,6 +117,15 @@ integration works it out from the elapsed time and the running preset's stage
 durations — the vendor app does the same. A boost adds ten minutes to the
 session and it is not known where in the curve that time lands, so a boosted
 session can show a stage one ahead of the device's own idea.
+
+**Remaining time** is the hold time plus ten minutes per boost, minus the
+runtime. It floors at zero rather than counting up once a session overruns.
+
+**Preheating** is stage one of the running preset. That matches the vendor app,
+which has a "Pre-Heating" state and a "Skip Pre-Heat" button, and whose cloud
+code treats the first eight minutes as the pre-heat phase. Like the stage
+sensor it needs the preset's curve; on a slot the device never reported, it
+stays unknown while a session runs.
 
 **Boost extends the session by ten minutes** per press, up to twelve presses.
 It is a counter of extensions, not an intensity level.
